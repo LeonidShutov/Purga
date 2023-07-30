@@ -46,6 +46,9 @@ fun MainScreen() {
     var isPlaying1 by remember { mutableStateOf(false) }
     var isPlaying2 by remember { mutableStateOf(false) }
 
+    var lastPosition1 by remember { mutableStateOf(0) }
+    var lastPosition2 by remember { mutableStateOf(0) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,7 +61,19 @@ fun MainScreen() {
             mediaPlayer = mediaPlayer1,
             context = context,
             rawResourceId = R.raw.rainforest,
-            onToggle = { isPlaying1 = it }
+            onToggle = { isPlaying ->
+                isPlaying1 = isPlaying
+                if (isPlaying) {
+                    if (lastPosition1 > 0) {
+                        mediaPlayer1.seekTo(lastPosition1)
+                    } else {
+                        mediaPlayer1.start()
+                    }
+                } else {
+                    lastPosition1 = mediaPlayer1.currentPosition
+                    mediaPlayer1.pause()
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -68,7 +83,19 @@ fun MainScreen() {
             mediaPlayer = mediaPlayer2,
             context = context,
             rawResourceId = R.raw.humpbackwhale,
-            onToggle = { isPlaying2 = it }
+            onToggle = { isPlaying ->
+                isPlaying2 = isPlaying
+                if (isPlaying) {
+                    if (lastPosition2 > 0) {
+                        mediaPlayer2.seekTo(lastPosition2)
+                    } else {
+                        mediaPlayer2.start()
+                    }
+                } else {
+                    lastPosition2 = mediaPlayer2.currentPosition
+                    mediaPlayer2.pause()
+                }
+            }
         )
     }
 
@@ -86,7 +113,6 @@ fun MainScreen() {
         }
     }
 }
-
 @Composable
 fun MediaButton(
     isPlaying: Boolean,
@@ -97,16 +123,21 @@ fun MediaButton(
 ) {
     Button(
         onClick = {
-            onToggle(!isPlaying) // Toggle the state before handling playback
-            if (!isPlaying) { // Check the updated state
+            if (!isPlaying) {
                 mediaPlayer.reset()
                 val rawFileDescriptor = context.resources.openRawResourceFd(rawResourceId)
                 mediaPlayer.setDataSource(rawFileDescriptor.fileDescriptor, rawFileDescriptor.startOffset, rawFileDescriptor.length)
                 mediaPlayer.prepare()
+
+                // If we are resuming playback from a paused state, set the playback position
+                if (mediaPlayer.currentPosition > 0) {
+                    mediaPlayer.seekTo(mediaPlayer.currentPosition)
+                }
                 mediaPlayer.start()
             } else {
                 mediaPlayer.pause()
             }
+            onToggle(!isPlaying) // Toggle the state after handling playback
         },
         colors = ButtonDefaults.buttonColors(
             contentColor = MaterialTheme.colorScheme.onPrimary
