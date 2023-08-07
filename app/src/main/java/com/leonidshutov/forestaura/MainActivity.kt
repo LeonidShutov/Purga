@@ -32,22 +32,38 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
-    val mediaPlayer1 = remember { MediaPlayer() }
-    val mediaPlayer2 = remember { MediaPlayer() }
-
+    val soundResources = listOf(
+        R.raw.rainforest,
+        R.raw.humpbackwhale,
+        // Add more sound resources here...
+    )
+    val buttonsMap = remember { mutableMapOf<Int, ButtonData>() }
     DisposableEffect(Unit) {
         onDispose {
-            mediaPlayer1.release()
-            mediaPlayer2.release()
+            buttonsMap.values.forEach { buttonData ->
+                buttonData.mediaPlayer.release()
+            }
         }
     }
 
     val context = LocalContext.current
-    var isPlaying1 by remember { mutableStateOf(false) }
-    var isPlaying2 by remember { mutableStateOf(false) }
-
-    var lastPosition1 by remember { mutableStateOf(0) }
-    var lastPosition2 by remember { mutableStateOf(0) }
+    soundResources.forEach { rawResourceId ->
+        buttonsMap.getOrPut(rawResourceId) {
+            val mediaPlayer = MediaPlayer.create(context, rawResourceId)
+            mediaPlayer.setOnCompletionListener {
+                val buttonData = buttonsMap[rawResourceId]
+                buttonData?.let {
+                    it.lastPosition = 0 // Reset the last position when audio completes
+                    prepareAndPlaySound(it) // Restart the audio playback
+                }
+            }
+            ButtonData(
+                mediaPlayer = mediaPlayer,
+                context = context,
+                rawResourceId = rawResourceId
+            )
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -56,55 +72,18 @@ fun MainScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        MediaButton(
-            isPlaying = isPlaying1,
-            mediaPlayer = mediaPlayer1,
-            context = context,
-            rawResourceId = R.raw.rainforest,
-            onToggle = { isPlaying ->
-                isPlaying1 = isPlaying
-                if (isPlaying) {
-                    if (lastPosition1 > 0) {
-                        mediaPlayer1.seekTo(lastPosition1)
-                    } else {
-                        mediaPlayer1.start()
-                    }
-                } else {
-                    lastPosition1 = mediaPlayer1.currentPosition
-                    mediaPlayer1.pause()
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        MediaButton(
-            isPlaying = isPlaying2,
-            mediaPlayer = mediaPlayer2,
-            context = context,
-            rawResourceId = R.raw.humpbackwhale,
-            onToggle = { isPlaying ->
-                isPlaying2 = isPlaying
-                if (isPlaying) {
-                    if (lastPosition2 > 0) {
-                        mediaPlayer2.seekTo(lastPosition2)
-                    } else {
-                        mediaPlayer2.start()
-                    }
-                } else {
-                    lastPosition2 = mediaPlayer2.currentPosition
-                    mediaPlayer2.pause()
-                }
-            }
-        )
+        buttonsMap.values.forEach { buttonData ->
+            MediaButton(buttonData = buttonData)
+        }
     }
 
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                mediaPlayer1.pause()
-                mediaPlayer2.pause()
+                buttonsMap.values.forEach { buttonData ->
+                    buttonData.mediaPlayer.pause()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
@@ -115,48 +94,62 @@ fun MainScreen() {
 }
 @Composable
 fun MediaButton(
-    isPlaying: Boolean,
-    mediaPlayer: MediaPlayer,
-    context: Context,
-    rawResourceId: Int,
-    onToggle: (Boolean) -> Unit
+    buttonData: ButtonData
 ) {
     Button(
         onClick = {
-            if (!isPlaying) {
-                mediaPlayer.reset()
-                val rawFileDescriptor = context.resources.openRawResourceFd(rawResourceId)
-                mediaPlayer.setDataSource(rawFileDescriptor.fileDescriptor, rawFileDescriptor.startOffset, rawFileDescriptor.length)
-                mediaPlayer.prepare()
-
-                // If we are resuming playback from a paused state, set the playback position
-                if (mediaPlayer.currentPosition > 0) {
-                    mediaPlayer.seekTo(mediaPlayer.currentPosition)
-                }
-                mediaPlayer.start()
-            } else {
+            val mediaPlayer = buttonData.mediaPlayer
+            if (!mediaPlayer.isPlaying) {
+                prepareAndPlaySound(buttonData)
+            }
+            else {
+                // If the media player is playing, pause it and save the current position
+                buttonData.lastPosition = mediaPlayer.currentPosition
                 mediaPlayer.pause()
             }
-            onToggle(!isPlaying) // Toggle the state after handling playback
         },
+
         colors = ButtonDefaults.buttonColors(
             contentColor = MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Icon(
-            painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+            painter = painterResource(id = if (buttonData.mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
             contentDescription = null,
             modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.onPrimary
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = stringResource(id = if (isPlaying) R.string.pause else R.string.play),
+            text = stringResource(id = if (buttonData.mediaPlayer.isPlaying) R.string.pause else R.string.play),
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onPrimary
         )
     }
 }
+
+
+private fun prepareAndPlaySound(buttonData: ButtonData) {
+    val mediaPlayer = buttonData.mediaPlayer
+    val context = buttonData.context
+    val rawResourceId = buttonData.rawResourceId
+
+    mediaPlayer.reset()
+    val rawFileDescriptor = context.resources.openRawResourceFd(rawResourceId)
+    mediaPlayer.setDataSource(rawFileDescriptor.fileDescriptor, rawFileDescriptor.startOffset, rawFileDescriptor.length)
+    mediaPlayer.prepare()
+    if (buttonData.lastPosition > 0) {
+        mediaPlayer.seekTo(buttonData.lastPosition)
+    }
+    mediaPlayer.start()
+}
+
+data class ButtonData(
+    val mediaPlayer: MediaPlayer,
+    var lastPosition: Int = 0,
+    val context: Context,
+    val rawResourceId: Int
+)
 
 @Preview(showBackground = true)
 @Composable
