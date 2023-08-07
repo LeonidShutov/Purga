@@ -16,7 +16,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -32,11 +31,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
-    val soundResources = listOf(
-        R.raw.rainforest,
-        R.raw.humpbackwhale,
-        // Add more sound resources here...
-    )
+    val soundResources = mutableListOf<Pair<Int, String>>()
+    val context = LocalContext.current
+
+    val rawClass = R.raw::class.java
+
+    val rawFields = rawClass.fields
+
+    for (field in rawFields) {
+        val resourceId = field.getInt(null)
+        val fileName = context.resources.getResourceEntryName(resourceId)
+        soundResources.add(resourceId to fileName)
+    }
+
     val buttonsMap = remember { mutableMapOf<Int, ButtonData>() }
     DisposableEffect(Unit) {
         onDispose {
@@ -46,8 +53,7 @@ fun MainScreen() {
         }
     }
 
-    val context = LocalContext.current
-    soundResources.forEach { rawResourceId ->
+    soundResources.forEach { (rawResourceId, fileName) ->
         buttonsMap.getOrPut(rawResourceId) {
             val mediaPlayer = MediaPlayer.create(context, rawResourceId)
             mediaPlayer.setOnCompletionListener {
@@ -60,7 +66,8 @@ fun MainScreen() {
             ButtonData(
                 mediaPlayer = mediaPlayer,
                 context = context,
-                rawResourceId = rawResourceId
+                rawResourceId = rawResourceId,
+                fileName = fileName
             )
         }
     }
@@ -121,8 +128,8 @@ fun MediaButton(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = stringResource(id = if (buttonData.mediaPlayer.isPlaying) R.string.pause else R.string.play),
-            fontSize = 18.sp,
+            text = buttonData.fileName, // Display the file name
+            fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onPrimary
         )
     }
@@ -148,7 +155,8 @@ data class ButtonData(
     val mediaPlayer: MediaPlayer,
     var lastPosition: Int = 0,
     val context: Context,
-    val rawResourceId: Int
+    val rawResourceId: Int,
+    val fileName: String
 )
 
 @Preview(showBackground = true)
