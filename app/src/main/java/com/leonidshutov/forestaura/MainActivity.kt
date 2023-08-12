@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
@@ -108,35 +109,52 @@ fun MainScreen() {
 fun MediaButton(
     buttonData: ButtonData
 ) {
+    val sliderValue = remember { mutableStateOf(buttonData.volume) }
+
+    // Apply MaterialTheme styling to the button and slider
     Button(
         onClick = {
             val mediaPlayer = buttonData.mediaPlayer
             if (!mediaPlayer.isPlaying) {
                 prepareAndPlaySound(buttonData)
-            }
-            else {
+            } else {
                 // If the media player is playing, pause it and save the current position
                 buttonData.lastPosition = mediaPlayer.currentPosition
                 mediaPlayer.pause()
             }
         },
-
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         colors = ButtonDefaults.buttonColors(
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = Color.Gray, // Set button background color
+            contentColor = MaterialTheme.colorScheme.onSurface // Set content (text and icon) color
         )
     ) {
-        Icon(
-            painter = painterResource(id = if (buttonData.mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onPrimary
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = buttonData.fileName, // Display the file name
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onPrimary
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(
+                painter = painterResource(id = if (buttonData.mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = buttonData.fileName, // Display the file name
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Slider(
+                value = sliderValue.value,
+                onValueChange = { newValue ->
+                    sliderValue.value = newValue
+                    buttonData.volume = newValue
+                    buttonData.mediaPlayer.setVolume(newValue, newValue) // Set volume for the media player
+                },
+                modifier = Modifier.weight(1f) // Take up remaining space
+            )
+        }
     }
 }
 
@@ -161,7 +179,8 @@ data class ButtonData(
     var lastPosition: Int = 0,
     val context: Context,
     val rawResourceId: Int,
-    val fileName: String
+    val fileName: String,
+    var volume: Float = 1.0f // Default volume is 1.0 (max volume)
 )
 
 @Preview(showBackground = true)
