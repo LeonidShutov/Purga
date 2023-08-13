@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -85,6 +86,18 @@ fun MainScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Button(
+            onClick = { stopAllPlayers(buttonsMap) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.stop_all),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         buttonsMap.values.forEach { buttonData ->
             MediaButton(buttonData = buttonData)
         }
@@ -105,6 +118,7 @@ fun MainScreen() {
         }
     }
 }
+
 @Composable
 fun MediaButton(
     buttonData: ButtonData
@@ -150,7 +164,10 @@ fun MediaButton(
                 onValueChange = { newValue ->
                     sliderValue.value = newValue
                     buttonData.volume = newValue
-                    buttonData.mediaPlayer.setVolume(newValue, newValue) // Set volume for the media player
+                    buttonData.mediaPlayer.setVolume(
+                        newValue,
+                        newValue
+                    ) // Set volume for the media player
                 },
                 modifier = Modifier.weight(1f) // Take up remaining space
             )
@@ -166,12 +183,24 @@ private fun prepareAndPlaySound(buttonData: ButtonData) {
 
     mediaPlayer.reset()
     val rawFileDescriptor = context.resources.openRawResourceFd(rawResourceId)
-    mediaPlayer.setDataSource(rawFileDescriptor.fileDescriptor, rawFileDescriptor.startOffset, rawFileDescriptor.length)
+    mediaPlayer.setDataSource(
+        rawFileDescriptor.fileDescriptor,
+        rawFileDescriptor.startOffset,
+        rawFileDescriptor.length
+    )
     mediaPlayer.prepare()
     if (buttonData.lastPosition > 0) {
         mediaPlayer.seekTo(buttonData.lastPosition)
     }
     mediaPlayer.start()
+}
+
+private fun stopAllPlayers(buttonsMap: Map<Int, ButtonData>) {
+    buttonsMap.values.forEach { buttonData ->
+        buttonData.mediaPlayer.pause()
+        buttonData.mediaPlayer.seekTo(0)
+        buttonData.lastPosition = 0
+    }
 }
 
 data class ButtonData(

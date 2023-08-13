@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="stop_all">stop all</string>
     <string name="app_name">ForestAura</string>
     <string name="pause">pause</string>
     <string name="play">play</string>
-    <string name="stop_all">stop all</string>
 </resources>
