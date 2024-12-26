@@ -15,11 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -35,104 +35,63 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
-    val soundResources = mutableListOf<Pair<Int, String>>()
     val context = LocalContext.current
+    val soundResources = loadSoundResources(context)
+    val mediaPlayersMap = remember { mutableStateMapOf<Int, ButtonData>() }
 
-    val rawClass = R.raw::class.java
-
-    val rawFields = rawClass.fields
-
-    for (field in rawFields) {
-        val resourceId = field.getInt(null)
-        val fileName = context.resources.getResourceEntryName(resourceId)
-        soundResources.add(resourceId to fileName)
+    // Initialize media players and update the map
+    LaunchedEffect(Unit) {
+        val initializedMap = initializeMediaPlayers(context, soundResources, mediaPlayersMap)
+        mediaPlayersMap.clear()
+        mediaPlayersMap.putAll(initializedMap)
+        println("MediaPlayersMap size: ${mediaPlayersMap.size}")
     }
 
-    val buttonsMap = remember { mutableMapOf<Int, ButtonData>() }
+    // Release MediaPlayer resources when the composable is disposed
     DisposableEffect(Unit) {
         onDispose {
-            buttonsMap.values.forEach { buttonData ->
+            mediaPlayersMap.values.forEach { buttonData ->
                 buttonData.mediaPlayer.release()
             }
         }
     }
 
-    soundResources.forEach { (rawResourceId, fileName) ->
-        buttonsMap.getOrPut(rawResourceId) {
-            val mediaPlayer = MediaPlayer.create(context, rawResourceId)
-            mediaPlayer.setOnCompletionListener {
-                val buttonData = buttonsMap[rawResourceId]
-                buttonData?.let {
-                    it.lastPosition = 0 // Reset the last position when audio completes
-                    prepareAndPlaySound(it) // Restart the audio playback
-                }
-            }
-            ButtonData(
-                mediaPlayer = mediaPlayer,
-                context = context,
-                rawResourceId = rawResourceId,
-                fileName = fileName
-            )
-        }
-    }
-
-    val verticalScrollState = rememberScrollState()
+    // Observe lifecycle events to pause MediaPlayers when the app goes to the background
+    ObserveLifecycle(LocalLifecycleOwner.current, mediaPlayersMap)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(verticalScrollState),
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Button(
-            onClick = { stopAllPlayers(buttonsMap) },
+            onClick = { stopAllPlayers(mediaPlayersMap) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
         ) {
-            Text(
-                text = stringResource(id = R.string.stop_all),
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
         }
-        buttonsMap.values.forEach { buttonData ->
+        mediaPlayersMap.values.forEach { buttonData ->
+            println("Rendering button for: ${buttonData.fileName}")
             MediaButton(buttonData = buttonData)
-        }
-    }
-
-    val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val lifecycleObserver = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                buttonsMap.values.forEach { buttonData ->
-                    buttonData.mediaPlayer.pause()
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
         }
     }
 }
 
 @Composable
-fun MediaButton(
-    buttonData: ButtonData
-) {
+fun MediaButton(buttonData: ButtonData) {
     val sliderValue = remember { mutableStateOf(buttonData.volume) }
 
-    // Apply MaterialTheme styling to the button and slider
     Button(
         onClick = {
             val mediaPlayer = buttonData.mediaPlayer
             if (!mediaPlayer.isPlaying) {
-                prepareAndPlaySound(buttonData)
+                prepareAndStartMediaPlayer(buttonData)
             } else {
-                // If the media player is playing, pause it and save the current position
                 buttonData.lastPosition = mediaPlayer.currentPosition
                 mediaPlayer.pause()
             }
@@ -141,8 +100,8 @@ fun MediaButton(
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Gray, // Set button background color
-            contentColor = MaterialTheme.colorScheme.onSurface // Set content (text and icon) color
+            containerColor = Color.Gray,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Row(
@@ -155,7 +114,7 @@ fun MediaButton(
                 tint = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = buttonData.fileName, // Display the file name
+                text = buttonData.fileName,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -164,42 +123,96 @@ fun MediaButton(
                 onValueChange = { newValue ->
                     sliderValue.value = newValue
                     buttonData.volume = newValue
-                    buttonData.mediaPlayer.setVolume(
-                        newValue,
-                        newValue
-                    ) // Set volume for the media player
+                    buttonData.mediaPlayer.setVolume(newValue, newValue)
                 },
-                modifier = Modifier.weight(1f) // Take up remaining space
+                modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
+private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
+    val soundResources = mutableListOf<Pair<Int, String>>()
+    val rawClass = R.raw::class.java
+    val rawFields = rawClass.fields
 
-private fun prepareAndPlaySound(buttonData: ButtonData) {
+    for (field in rawFields) {
+        val resourceId = field.getInt(null)
+        val fileName = context.resources.getResourceEntryName(resourceId)
+        soundResources.add(resourceId to fileName)
+        println("Loaded sound resource: $fileName (ID: $resourceId)") //
+    }
+
+    return soundResources
+}
+
+private fun initializeMediaPlayers(
+    context: Context,
+    soundResources: List<Pair<Int, String>>,
+    mediaPlayersMap: MutableMap<Int, ButtonData> // Pass the map as a parameter
+): Map<Int, ButtonData> {
+    return soundResources.associate { (rawResourceId, fileName) ->
+        val mediaPlayer = MediaPlayer.create(context, rawResourceId)
+            ?: throw IllegalStateException("Failed to create MediaPlayer for resource $rawResourceId")
+        mediaPlayer.setOnCompletionListener {
+            mediaPlayersMap[rawResourceId]?.let { buttonData ->
+                buttonData.lastPosition = 0
+                prepareAndStartMediaPlayer(buttonData)
+            }
+        }
+        println("Initialized MediaPlayer for: $fileName (ID: $rawResourceId)") // Logging
+
+        rawResourceId to ButtonData(
+            mediaPlayer = mediaPlayer,
+            context = context,
+            rawResourceId = rawResourceId,
+            fileName = fileName
+        )
+    }
+}
+
+private fun prepareAndStartMediaPlayer(buttonData: ButtonData) {
     val mediaPlayer = buttonData.mediaPlayer
     val context = buttonData.context
     val rawResourceId = buttonData.rawResourceId
 
     mediaPlayer.reset()
-    val rawFileDescriptor = context.resources.openRawResourceFd(rawResourceId)
-    mediaPlayer.setDataSource(
-        rawFileDescriptor.fileDescriptor,
-        rawFileDescriptor.startOffset,
-        rawFileDescriptor.length
-    )
-    mediaPlayer.prepare()
-    if (buttonData.lastPosition > 0) {
-        mediaPlayer.seekTo(buttonData.lastPosition)
+    context.resources.openRawResourceFd(rawResourceId).use { rawFileDescriptor ->
+        mediaPlayer.setDataSource(
+            rawFileDescriptor.fileDescriptor,
+            rawFileDescriptor.startOffset,
+            rawFileDescriptor.length
+        )
+        mediaPlayer.prepare()
+        if (buttonData.lastPosition > 0) {
+            mediaPlayer.seekTo(buttonData.lastPosition)
+        }
+        mediaPlayer.start()
     }
-    mediaPlayer.start()
 }
 
-private fun stopAllPlayers(buttonsMap: Map<Int, ButtonData>) {
-    buttonsMap.values.forEach { buttonData ->
+private fun stopAllPlayers(mediaPlayersMap: Map<Int, ButtonData>) {
+    mediaPlayersMap.values.forEach { buttonData ->
         buttonData.mediaPlayer.pause()
         buttonData.mediaPlayer.seekTo(0)
         buttonData.lastPosition = 0
+    }
+}
+
+@Composable
+private fun ObserveLifecycle(lifecycleOwner: LifecycleOwner, mediaPlayersMap: Map<Int, ButtonData>) {
+    DisposableEffect(lifecycleOwner) {
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                mediaPlayersMap.values.forEach { buttonData ->
+                    buttonData.mediaPlayer.pause()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
+        }
     }
 }
 
@@ -209,7 +222,7 @@ data class ButtonData(
     val context: Context,
     val rawResourceId: Int,
     val fileName: String,
-    var volume: Float = 1.0f // Default volume is 1.0 (max volume)
+    var volume: Float = 1.0f
 )
 
 @Preview(showBackground = true)
