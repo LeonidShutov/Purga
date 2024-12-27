@@ -23,10 +23,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import timber.log.Timber
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Timber.plant(Timber.DebugTree()) // Plant a debug tree for debug builds
         setContent {
             MainScreen()
         }
@@ -44,7 +46,7 @@ fun MainScreen() {
         val initializedMap = initializeMediaPlayers(context, soundResources, mediaPlayersMap)
         mediaPlayersMap.clear()
         mediaPlayersMap.putAll(initializedMap)
-        println("MediaPlayersMap size: ${mediaPlayersMap.size}")
+        Timber.d("MediaPlayersMap size: ${mediaPlayersMap.size}")
     }
 
     // Release MediaPlayer resources when the composable is disposed
@@ -76,7 +78,7 @@ fun MainScreen() {
             Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
         }
         mediaPlayersMap.values.forEach { buttonData ->
-            println("Rendering button for: ${buttonData.fileName}")
+            Timber.d("Rendering button for: ${buttonData.fileName}")
             MediaButton(buttonData = buttonData)
         }
     }
@@ -140,7 +142,7 @@ private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
         val resourceId = field.getInt(null)
         val fileName = context.resources.getResourceEntryName(resourceId)
         soundResources.add(resourceId to fileName)
-        println("Loaded sound resource: $fileName (ID: $resourceId)") //
+        Timber.d("Loaded sound resource: $fileName (ID: $resourceId)") //
     }
 
     return soundResources
@@ -160,7 +162,7 @@ private fun initializeMediaPlayers(
                 prepareAndStartMediaPlayer(buttonData)
             }
         }
-        println("Initialized MediaPlayer for: $fileName (ID: $rawResourceId)") // Logging
+        Timber.d("Initialized MediaPlayer for: $fileName (ID: $rawResourceId)") // Logging
 
         rawResourceId to ButtonData(
             mediaPlayer = mediaPlayer,
