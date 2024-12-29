@@ -5,8 +5,14 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -112,9 +118,27 @@ fun MainScreen() {
     }
 }
 
+private const val animationDuration = 500
+
 @Composable
 fun MediaButton(buttonData: ButtonData) {
     val sliderValue = remember { mutableStateOf(buttonData.volume) }
+
+    // Animate the slider value
+    val animatedSliderValue by animateFloatAsState(
+        targetValue = sliderValue.value,
+        animationSpec = tween(durationMillis = animationDuration)
+    )
+
+    // Animate the card's background color
+    val backgroundColor by animateColorAsState(
+        targetValue = if (buttonData.isPlaying.value) {
+            MaterialTheme.colorScheme.primaryContainer // Highlight when playing
+        } else {
+            MaterialTheme.colorScheme.surface // Default color
+        },
+        animationSpec = tween(durationMillis = animationDuration) // Smooth transition
+    )
 
     Card(
         modifier = Modifier
@@ -123,11 +147,7 @@ fun MediaButton(buttonData: ButtonData) {
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (buttonData.isPlaying.value) {
-                MaterialTheme.colorScheme.primaryContainer // Highlight when playing
-            } else {
-                MaterialTheme.colorScheme.surface // Default color
-            }
+            containerColor = backgroundColor // Use the animated color
         )
     ) {
         Button(
@@ -152,18 +172,26 @@ fun MediaButton(buttonData: ButtonData) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    painter = painterResource(id = if (buttonData.isPlaying.value) R.drawable.ic_pause else R.drawable.ic_play),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                AnimatedContent(
+                    targetState = buttonData.isPlaying.value,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(durationMillis = animationDuration)) togetherWith
+                                fadeOut(animationSpec = tween(durationMillis = animationDuration))
+                    }
+                ) { isPlaying ->
+                    Icon(
+                        painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Text(
                     text = buttonData.fileName,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Slider(
-                    value = sliderValue.value,
+                    value = animatedSliderValue, // Use the animated slider value
                     onValueChange = { newValue ->
                         sliderValue.value = newValue
                         buttonData.volume = newValue
