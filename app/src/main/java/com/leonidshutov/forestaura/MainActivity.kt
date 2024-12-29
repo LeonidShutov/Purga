@@ -1,6 +1,7 @@
 package com.leonidshutov.forestaura
 
 import android.content.Context
+import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.leonidshutov.forestaura.ui.theme.ForestAuraTheme
 import timber.log.Timber
 
@@ -40,37 +43,33 @@ class MainActivity : ComponentActivity() {
         Timber.plant(Timber.DebugTree()) // Plant a debug tree for debug builds
         setContent {
             ForestAuraTheme {
-                MainScreen()
+                val viewModel: MainViewModel = viewModel()
+                MainScreen(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val soundResources = loadSoundResources(context)
-    val mediaPlayersMap = remember { mutableStateMapOf<Int, ButtonData>() }
 
-    // Initialize media players and update the map
+    // Initialize media players
     LaunchedEffect(Unit) {
-        val initializedMap = initializeMediaPlayers(context, soundResources, mediaPlayersMap)
-        mediaPlayersMap.clear()
-        mediaPlayersMap.putAll(initializedMap)
-        Timber.d("MediaPlayersMap size: ${mediaPlayersMap.size}")
+        viewModel.initializeMediaPlayers(context, soundResources)
     }
 
     // Release MediaPlayer resources when the composable is disposed
     DisposableEffect(Unit) {
         onDispose {
-            mediaPlayersMap.values.forEach { buttonData ->
-                buttonData.mediaPlayer.release()
-            }
+            viewModel.stopAllPlayers(context)
         }
     }
-
-    // Observe lifecycle events to pause MediaPlayers when the app goes to the background
-    ObserveLifecycle(androidx.lifecycle.compose.LocalLifecycleOwner.current, mediaPlayersMap)
+    // Observe lifecycle events to stop the foreground service when the app is destroyed
+    ObserveLifecycle(LocalLifecycleOwner.current, onDestroy = {
+        viewModel.stopAllPlayers(context)
+    })
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -92,7 +91,7 @@ fun MainScreen() {
 
             // Add the "Stop All" button
             Button(
-                onClick = { stopAllPlayers(mediaPlayersMap) },
+                onClick = { viewModel.stopAllPlayers(context) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -100,13 +99,13 @@ fun MainScreen() {
                 Text(text = "Stop All", fontSize = 14.sp)
             }
 
-            SoundGroups(mediaPlayersMap) // Add the sound groups
+            SoundGroups(viewModel.mediaPlayersMap, viewModel)
         }
     }
 }
 
 @Composable
-fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>) {
+fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>, viewModel: MainViewModel) {
     val groups = listOf(
         "Birds" to mediaPlayersMap.values.filter { it.fileName.startsWith("bird") },
         "Water" to mediaPlayersMap.values.filter { it.fileName.startsWith("water") },
@@ -122,14 +121,14 @@ fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>) {
     ) {
         groups.forEach { (groupName, sounds) ->
             item {
-                ExpandableSoundGroup(groupName, sounds)
+                ExpandableSoundGroup(groupName, sounds, viewModel)
             }
         }
     }
 }
 
 @Composable
-fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>) {
+fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>, viewModel: MainViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(
@@ -161,7 +160,7 @@ fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>) {
             ) {
                 Column {
                     sounds.forEach { buttonData ->
-                        SoundButton(buttonData = buttonData)
+                        SoundButton(buttonData = buttonData, viewModel = viewModel, context = LocalContext.current)
                     }
                 }
             }
@@ -170,8 +169,8 @@ fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>) {
 }
 
 @Composable
-fun SoundButton(buttonData: ButtonData) {
-    val sliderValue = remember { mutableFloatStateOf(buttonData.volume) }
+fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Context) {
+    val sliderValue = remember { mutableStateOf(buttonData.volume) }
 
     // Animate the card's background color
     val backgroundColor by animateColorAsState(
@@ -180,7 +179,7 @@ fun SoundButton(buttonData: ButtonData) {
         } else {
             MaterialTheme.colorScheme.surface // Default color
         },
-        animationSpec = tween(durationMillis = 300), label = "" // Smooth transition
+        animationSpec = tween(durationMillis = 300) // Smooth transition
     )
 
     Card(
@@ -196,12 +195,11 @@ fun SoundButton(buttonData: ButtonData) {
         Column {
             Button(
                 onClick = {
-                    val mediaPlayer = buttonData.mediaPlayer
                     if (!buttonData.isPlaying.value) {
-                        prepareAndStartMediaPlayer(buttonData)
+                        viewModel.prepareAndStartMediaPlayer(buttonData, context)
                     } else {
-                        buttonData.lastPosition = mediaPlayer.currentPosition
-                        mediaPlayer.pause()
+                        buttonData.lastPosition = buttonData.mediaPlayer.currentPosition
+                        buttonData.mediaPlayer.pause()
                         buttonData.isPlaying.value = false // Update playing state
                     }
                 },
@@ -234,9 +232,9 @@ fun SoundButton(buttonData: ButtonData) {
                 exit = shrinkVertically()
             ) {
                 Slider(
-                    value = sliderValue.floatValue,
+                    value = sliderValue.value,
                     onValueChange = { newValue ->
-                        sliderValue.floatValue = newValue
+                        sliderValue.value = newValue
                         buttonData.volume = newValue
                         buttonData.mediaPlayer.setVolume(newValue, newValue)
                     },
@@ -280,71 +278,24 @@ private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
     return soundResources
 }
 
-private fun initializeMediaPlayers(
-    context: Context,
-    soundResources: List<Pair<Int, String>>,
-    mediaPlayersMap: MutableMap<Int, ButtonData>
-): Map<Int, ButtonData> {
-    return soundResources.associate { (rawResourceId, fileName) ->
-        val mediaPlayer = MediaPlayer.create(context, rawResourceId)
-            ?: throw IllegalStateException("Failed to create MediaPlayer for resource $rawResourceId")
-        mediaPlayer.setOnCompletionListener {
-            mediaPlayersMap[rawResourceId]?.let { buttonData ->
-                if (buttonData.mediaPlayer.isPlaying) { // Check if the player is still playing
-                    buttonData.lastPosition = 0
-                    prepareAndStartMediaPlayer(buttonData)
-                }
-            }
-        }
-        Timber.d("Initialized MediaPlayer for: $fileName (ID: $rawResourceId)")
-
-        rawResourceId to ButtonData(
-            mediaPlayer = mediaPlayer,
-            context = context,
-            rawResourceId = rawResourceId,
-            fileName = fileName
-        )
+fun startForegroundService(context: Context, soundResourceIds: List<Int>) {
+    val intent = Intent(context, ForegroundService::class.java).apply {
+        putIntegerArrayListExtra("soundResourceIds", ArrayList(soundResourceIds))
     }
+    context.startForegroundService(intent)
 }
 
-private fun prepareAndStartMediaPlayer(buttonData: ButtonData) {
-    val mediaPlayer = buttonData.mediaPlayer
-    val context = buttonData.context
-    val rawResourceId = buttonData.rawResourceId
-
-    mediaPlayer.reset()
-    context.resources.openRawResourceFd(rawResourceId).use { rawFileDescriptor ->
-        mediaPlayer.setDataSource(
-            rawFileDescriptor.fileDescriptor,
-            rawFileDescriptor.startOffset,
-            rawFileDescriptor.length
-        )
-        mediaPlayer.prepare()
-        if (buttonData.lastPosition > 0) {
-            mediaPlayer.seekTo(buttonData.lastPosition)
-        }
-        mediaPlayer.start()
-        buttonData.isPlaying.value = true // Update playing state
-    }
-}
-
-private fun stopAllPlayers(mediaPlayersMap: Map<Int, ButtonData>) {
-    mediaPlayersMap.values.forEach { buttonData ->
-        buttonData.mediaPlayer.pause()
-        buttonData.mediaPlayer.seekTo(0)
-        buttonData.lastPosition = 0
-        buttonData.isPlaying.value = false // Update playing state
-    }
+fun stopForegroundService(context: Context) {
+    val intent = Intent(context, ForegroundService::class.java)
+    context.stopService(intent)
 }
 
 @Composable
-private fun ObserveLifecycle(lifecycleOwner: LifecycleOwner, mediaPlayersMap: Map<Int, ButtonData>) {
+fun ObserveLifecycle(lifecycleOwner: LifecycleOwner, onDestroy: () -> Unit) {
     DisposableEffect(lifecycleOwner) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                mediaPlayersMap.values.forEach { buttonData ->
-                    buttonData.mediaPlayer.pause()
-                }
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                onDestroy()
             }
         }
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
@@ -367,5 +318,5 @@ data class ButtonData(
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    MainScreen()
+    MainScreen(viewModel = MainViewModel())
 }
