@@ -5,30 +5,26 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,7 +39,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Timber.plant(Timber.DebugTree()) // Plant a debug tree for debug builds
         setContent {
-            ForestAuraTheme{
+            ForestAuraTheme {
                 MainScreen()
             }
         }
@@ -74,7 +70,7 @@ fun MainScreen() {
     }
 
     // Observe lifecycle events to pause MediaPlayers when the app goes to the background
-    ObserveLifecycle(LocalLifecycleOwner.current, mediaPlayersMap)
+    ObserveLifecycle(androidx.lifecycle.compose.LocalLifecycleOwner.current, mediaPlayersMap)
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -93,42 +89,89 @@ fun MainScreen() {
                 )
         ) {
             TopAppBarContent() // Add the Top App Bar
-            Column(
+
+            // Add the "Stop All" button
+            Button(
+                onClick = { stopAllPlayers(mediaPlayersMap) },
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
             ) {
-                Button(
-                    onClick = { stopAllPlayers(mediaPlayersMap) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                ) {
-                    Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
-                }
-                mediaPlayersMap.values.forEach { buttonData ->
-                    Timber.d("Rendering button for: ${buttonData.fileName}")
-                    MediaButton(buttonData = buttonData)
+                Text(text = "Stop All", fontSize = 14.sp)
+            }
+
+            SoundGroups(mediaPlayersMap) // Add the sound groups
+        }
+    }
+}
+
+@Composable
+fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>) {
+    val groups = listOf(
+        "Birds" to mediaPlayersMap.values.filter { it.fileName.startsWith("bird") },
+        "Water" to mediaPlayersMap.values.filter { it.fileName.startsWith("water") },
+        "Forest" to mediaPlayersMap.values.filter { it.fileName.startsWith("forest") },
+        "Weather" to mediaPlayersMap.values.filter { it.fileName.startsWith("weather") },
+        "Animals" to mediaPlayersMap.values.filter { it.fileName.startsWith("animal") }
+    )
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        groups.forEach { (groupName, sounds) ->
+            item {
+                ExpandableSoundGroup(groupName, sounds)
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column {
+            ListItem(
+                headlineContent = { Text(text = groupName, style = MaterialTheme.typography.titleMedium) },
+                trailingContent = {
+                    IconButton(onClick = { isExpanded = !isExpanded }) {
+                        Icon(
+                            painter = painterResource(id = if (isExpanded) R.drawable.baseline_expand_less_24 else R.drawable.baseline_expand_more_24),
+                            contentDescription = if (isExpanded) "Collapse" else "Expand"
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+            )
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column {
+                    sounds.forEach { buttonData ->
+                        SoundButton(buttonData = buttonData)
+                    }
                 }
             }
         }
     }
 }
 
-private const val animationDuration = 500
-
 @Composable
-fun MediaButton(buttonData: ButtonData) {
-    val sliderValue = remember { mutableStateOf(buttonData.volume) }
-
-    // Animate the slider value
-    val animatedSliderValue by animateFloatAsState(
-        targetValue = sliderValue.value,
-        animationSpec = tween(durationMillis = animationDuration)
-    )
+fun SoundButton(buttonData: ButtonData) {
+    val sliderValue = remember { mutableFloatStateOf(buttonData.volume) }
 
     // Animate the card's background color
     val backgroundColor by animateColorAsState(
@@ -137,67 +180,69 @@ fun MediaButton(buttonData: ButtonData) {
         } else {
             MaterialTheme.colorScheme.surface // Default color
         },
-        animationSpec = tween(durationMillis = animationDuration) // Smooth transition
+        animationSpec = tween(durationMillis = 300), label = "" // Smooth transition
     )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 4.dp),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = backgroundColor // Use the animated color
         )
     ) {
-        Button(
-            onClick = {
-                val mediaPlayer = buttonData.mediaPlayer
-                if (!buttonData.isPlaying.value) {
-                    prepareAndStartMediaPlayer(buttonData)
-                } else {
-                    buttonData.lastPosition = mediaPlayer.currentPosition
-                    mediaPlayer.pause()
-                    buttonData.isPlaying.value = false // Update playing state
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent, // Make the button transparent
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp) // Remove button elevation
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                AnimatedContent(
-                    targetState = buttonData.isPlaying.value,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(durationMillis = animationDuration)) togetherWith
-                                fadeOut(animationSpec = tween(durationMillis = animationDuration))
+        Column {
+            Button(
+                onClick = {
+                    val mediaPlayer = buttonData.mediaPlayer
+                    if (!buttonData.isPlaying.value) {
+                        prepareAndStartMediaPlayer(buttonData)
+                    } else {
+                        buttonData.lastPosition = mediaPlayer.currentPosition
+                        mediaPlayer.pause()
+                        buttonData.isPlaying.value = false // Update playing state
                     }
-                ) { isPlaying ->
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent, // Make the button transparent
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp) // Remove button elevation
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Icon(
-                        painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                        painter = painterResource(id = if (buttonData.isPlaying.value) R.drawable.ic_pause else R.drawable.ic_play),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurface
                     )
+                    Text(
+                        text = buttonData.fileName,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
-                Text(
-                    text = buttonData.fileName,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            }
+            AnimatedVisibility(
+                visible = buttonData.isPlaying.value,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
                 Slider(
-                    value = animatedSliderValue, // Use the animated slider value
+                    value = sliderValue.floatValue,
                     onValueChange = { newValue ->
-                        sliderValue.value = newValue
+                        sliderValue.floatValue = newValue
                         buttonData.volume = newValue
                         buttonData.mediaPlayer.setVolume(newValue, newValue)
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
         }
@@ -229,7 +274,7 @@ private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
         val resourceId = field.getInt(null)
         val fileName = context.resources.getResourceEntryName(resourceId)
         soundResources.add(resourceId to fileName)
-        Timber.d("Loaded sound resource: $fileName (ID: $resourceId)") //
+        Timber.d("Loaded sound resource: $fileName (ID: $resourceId)")
     }
 
     return soundResources
