@@ -5,6 +5,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -68,29 +70,43 @@ fun MainScreen() {
     // Observe lifecycle events to pause MediaPlayers when the app goes to the background
     ObserveLifecycle(LocalLifecycleOwner.current, mediaPlayersMap)
 
-    Column(
+    Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        TopAppBarContent() // Add the Top App Bar
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF4CAF50), // Green
+                            Color(0xFF81C784), // Light Green
+                            Color(0xFF388E3C) // Dark Green
+                        )
+                    )
+                )
         ) {
-            Button(
-                onClick = { stopAllPlayers(mediaPlayersMap) },
+            TopAppBarContent() // Add the Top App Bar
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
-            }
-            mediaPlayersMap.values.forEach { buttonData ->
-                Timber.d("Rendering button for: ${buttonData.fileName}")
-                MediaButton(buttonData = buttonData)
+                Button(
+                    onClick = { stopAllPlayers(mediaPlayersMap) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
+                }
+                mediaPlayersMap.values.forEach { buttonData ->
+                    Timber.d("Rendering button for: ${buttonData.fileName}")
+                    MediaButton(buttonData = buttonData)
+                }
             }
         }
     }
