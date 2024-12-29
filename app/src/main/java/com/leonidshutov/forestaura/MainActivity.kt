@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.leonidshutov.forestaura.ui.theme.ForestAuraTheme
 import timber.log.Timber
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +31,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Timber.plant(Timber.DebugTree()) // Plant a debug tree for debug builds
         setContent {
-            MainScreen()
+            ForestAuraTheme{
+                MainScreen()
+            }
         }
     }
 }
