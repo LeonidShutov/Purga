@@ -7,12 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -65,75 +67,101 @@ fun MainScreen() {
     ObserveLifecycle(LocalLifecycleOwner.current, mediaPlayersMap)
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxSize()
     ) {
-        Button(
-            onClick = { stopAllPlayers(mediaPlayersMap) },
+        TopAppBarContent() // Add the Top App Bar
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
-        }
-        mediaPlayersMap.values.forEach { buttonData ->
-            Timber.d("Rendering button for: ${buttonData.fileName}")
-            MediaButton(buttonData = buttonData)
+            Button(
+                onClick = { stopAllPlayers(mediaPlayersMap) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+            ) {
+                Text(text = stringResource(id = R.string.stop_all), fontSize = 14.sp)
+            }
+            mediaPlayersMap.values.forEach { buttonData ->
+                Timber.d("Rendering button for: ${buttonData.fileName}")
+                MediaButton(buttonData = buttonData)
+            }
         }
     }
 }
-
 @Composable
 fun MediaButton(buttonData: ButtonData) {
     val sliderValue = remember { mutableStateOf(buttonData.volume) }
 
-    Button(
-        onClick = {
-            val mediaPlayer = buttonData.mediaPlayer
-            if (!mediaPlayer.isPlaying) {
-                prepareAndStartMediaPlayer(buttonData)
-            } else {
-                buttonData.lastPosition = mediaPlayer.currentPosition
-                mediaPlayer.pause()
-            }
-        },
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Gray,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Button(
+            onClick = {
+                val mediaPlayer = buttonData.mediaPlayer
+                if (!mediaPlayer.isPlaying) {
+                    prepareAndStartMediaPlayer(buttonData)
+                } else {
+                    buttonData.lastPosition = mediaPlayer.currentPosition
+                    mediaPlayer.pause()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
         ) {
-            Icon(
-                painter = painterResource(id = if (buttonData.mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = buttonData.fileName,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Slider(
-                value = sliderValue.value,
-                onValueChange = { newValue ->
-                    sliderValue.value = newValue
-                    buttonData.volume = newValue
-                    buttonData.mediaPlayer.setVolume(newValue, newValue)
-                },
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Icon(
+                    painter = painterResource(id = if (buttonData.mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = buttonData.fileName,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Slider(
+                    value = sliderValue.value,
+                    onValueChange = { newValue ->
+                        sliderValue.value = newValue
+                        buttonData.volume = newValue
+                        buttonData.mediaPlayer.setVolume(newValue, newValue)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopAppBarContent() {
+    TopAppBar(
+        title = { Text("Forest Aura") },
+        actions = {
+            IconButton(onClick = { /* Handle settings/info click */ }) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings"
+                )
+            }
+        }
+    )
 }
 
 private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
