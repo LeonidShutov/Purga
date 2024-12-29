@@ -151,18 +151,20 @@ private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
 private fun initializeMediaPlayers(
     context: Context,
     soundResources: List<Pair<Int, String>>,
-    mediaPlayersMap: MutableMap<Int, ButtonData> // Pass the map as a parameter
+    mediaPlayersMap: MutableMap<Int, ButtonData>
 ): Map<Int, ButtonData> {
     return soundResources.associate { (rawResourceId, fileName) ->
         val mediaPlayer = MediaPlayer.create(context, rawResourceId)
             ?: throw IllegalStateException("Failed to create MediaPlayer for resource $rawResourceId")
         mediaPlayer.setOnCompletionListener {
             mediaPlayersMap[rawResourceId]?.let { buttonData ->
-                buttonData.lastPosition = 0
-                prepareAndStartMediaPlayer(buttonData)
+                if (buttonData.mediaPlayer.isPlaying) { // Check if the player is still playing
+                    buttonData.lastPosition = 0
+                    prepareAndStartMediaPlayer(buttonData)
+                }
             }
         }
-        Timber.d("Initialized MediaPlayer for: $fileName (ID: $rawResourceId)") // Logging
+        Timber.d("Initialized MediaPlayer for: $fileName (ID: $rawResourceId)")
 
         rawResourceId to ButtonData(
             mediaPlayer = mediaPlayer,
@@ -172,7 +174,6 @@ private fun initializeMediaPlayers(
         )
     }
 }
-
 private fun prepareAndStartMediaPlayer(buttonData: ButtonData) {
     val mediaPlayer = buttonData.mediaPlayer
     val context = buttonData.context
