@@ -5,6 +5,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -93,6 +95,7 @@ fun MainScreen() {
         }
     }
 }
+
 @Composable
 fun MediaButton(buttonData: ButtonData) {
     val sliderValue = remember { mutableStateOf(buttonData.volume) }
@@ -102,30 +105,39 @@ fun MediaButton(buttonData: ButtonData) {
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (buttonData.isPlaying.value) {
+                MaterialTheme.colorScheme.primaryContainer // Highlight when playing
+            } else {
+                MaterialTheme.colorScheme.surface // Default color
+            }
+        )
     ) {
         Button(
             onClick = {
                 val mediaPlayer = buttonData.mediaPlayer
-                if (!mediaPlayer.isPlaying) {
+                if (!buttonData.isPlaying.value) {
                     prepareAndStartMediaPlayer(buttonData)
                 } else {
                     buttonData.lastPosition = mediaPlayer.currentPosition
                     mediaPlayer.pause()
+                    buttonData.isPlaying.value = false // Update playing state
                 }
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = Color.Transparent, // Make the button transparent
                 contentColor = MaterialTheme.colorScheme.onSurface
-            )
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp) // Remove button elevation
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Icon(
-                    painter = painterResource(id = if (buttonData.mediaPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                    painter = painterResource(id = if (buttonData.isPlaying.value) R.drawable.ic_pause else R.drawable.ic_play),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -205,6 +217,7 @@ private fun initializeMediaPlayers(
         )
     }
 }
+
 private fun prepareAndStartMediaPlayer(buttonData: ButtonData) {
     val mediaPlayer = buttonData.mediaPlayer
     val context = buttonData.context
@@ -222,6 +235,7 @@ private fun prepareAndStartMediaPlayer(buttonData: ButtonData) {
             mediaPlayer.seekTo(buttonData.lastPosition)
         }
         mediaPlayer.start()
+        buttonData.isPlaying.value = true // Update playing state
     }
 }
 
@@ -230,6 +244,7 @@ private fun stopAllPlayers(mediaPlayersMap: Map<Int, ButtonData>) {
         buttonData.mediaPlayer.pause()
         buttonData.mediaPlayer.seekTo(0)
         buttonData.lastPosition = 0
+        buttonData.isPlaying.value = false // Update playing state
     }
 }
 
@@ -256,7 +271,8 @@ data class ButtonData(
     val context: Context,
     val rawResourceId: Int,
     val fileName: String,
-    var volume: Float = 1.0f
+    var volume: Float = 1.0f,
+    var isPlaying: MutableState<Boolean> = mutableStateOf(false) // Track playing state
 )
 
 @Preview(showBackground = true)
