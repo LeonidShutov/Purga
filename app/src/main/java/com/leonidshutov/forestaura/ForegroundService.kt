@@ -10,6 +10,7 @@ import android.content.Intent
 import android.media.MediaPlayer
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import timber.log.Timber
 
 class ForegroundService : Service() {
 
@@ -39,7 +40,16 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         // Release all MediaPlayer resources when the service is destroyed
-        mediaPlayers.values.forEach { it.release() }
+        mediaPlayers.values.forEach { mediaPlayer ->
+            try {
+                if (mediaPlayer.isPlaying) {
+                    mediaPlayer.stop()
+                }
+                mediaPlayer.release()
+            } catch (e: Exception) {
+                Timber.e("Error releasing MediaPlayer: ${e.message}")
+            }
+        }
     }
 
     private fun createNotificationChannel() {
