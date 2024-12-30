@@ -65,26 +65,25 @@ fun MainScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val soundResources = loadSoundResources(context)
     var showTimerDialog by remember { mutableStateOf(false) }
-    var selectedTimerDuration by remember { mutableStateOf<Int?>(null) } // Timer duration in minutes
-    var remainingTime by remember { mutableStateOf<Int?>(null) } // Remaining time in seconds
-    var isTimerActive by remember { mutableStateOf(false) } // Whether the timer is active
+    var selectedTimerDuration by remember { mutableStateOf<Int?>(null) }
+    var remainingTime by remember { mutableStateOf<Int?>(null) }
+    var isTimerActive by remember { mutableStateOf(false) }
 
     // Initialize media players
     LaunchedEffect(Unit) {
-        viewModel.initializeMediaPlayers(context, soundResources)
+        viewModel.initialize(context, soundResources)
     }
 
     // Start the timer when a duration is selected
     LaunchedEffect(selectedTimerDuration) {
         selectedTimerDuration?.let { duration ->
             isTimerActive = true
-            remainingTime = duration * 60 // Convert minutes to seconds
+            remainingTime = duration * 60
             while (isTimerActive && remainingTime!! > 0) {
-                delay(1000L) // Wait for 1 second
+                delay(1000L)
                 remainingTime = remainingTime!! - 1
             }
             if (isTimerActive) {
-                // Timer ended, stop all players
                 viewModel.stopAllPlayers(context)
                 showTimerEndNotification(context)
             }
@@ -94,7 +93,13 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 
-    ObserveLifecycle(LocalLifecycleOwner.current, onDestroy = {
+    // Save last saved playing sounds when the app is backgrounded or destroyed
+    ObserveLifecycle(LocalLifecycleOwner.current, onStop = {
+        Timber.d("App is being backgrounded. Saving last saved playing sounds.")
+        viewModel.savePlayingSounds(saveLastSaved = true)
+    }, onDestroy = {
+        Timber.d("App is being destroyed. Saving last saved playing sounds.")
+        viewModel.savePlayingSounds(saveLastSaved = true)
         viewModel.stopAllPlayers(context)
     })
 
@@ -120,14 +125,21 @@ fun MainScreen(viewModel: MainViewModel) {
                 onCancelTimer = { isTimerActive = false }
             )
 
-            // Add the "Stop All" button
+            // Add the "Stop All" or "Resume" button
+            val isAnySoundPlaying = viewModel.mediaPlayersMap.values.any { it.isPlaying.value }
             Button(
-                onClick = { viewModel.stopAllPlayers(context) },
+                onClick = {
+                    if (isAnySoundPlaying) {
+                        viewModel.stopAllPlayers(context)
+                    } else {
+                        viewModel.resumePlayers(context)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(text = "Stop All", fontSize = 14.sp)
+                Text(text = if (isAnySoundPlaying) "Stop All" else "Resume", fontSize = 14.sp)
             }
 
             SoundGroups(viewModel.mediaPlayersMap, viewModel)
@@ -382,7 +394,6 @@ private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
         val resourceId = field.getInt(null)
         val fileName = context.resources.getResourceEntryName(resourceId)
         soundResources.add(resourceId to fileName)
-        Timber.d("Loaded sound resource: $fileName (ID: $resourceId)")
     }
 
     return soundResources
@@ -420,11 +431,19 @@ fun stopForegroundService(context: Context) {
 }
 
 @Composable
-fun ObserveLifecycle(lifecycleOwner: LifecycleOwner, onDestroy: () -> Unit) {
+fun ObserveLifecycle(
+    lifecycleOwner: LifecycleOwner,
+    onStart: () -> Unit = {},
+    onStop: () -> Unit = {},
+    onDestroy: () -> Unit = {}
+) {
     DisposableEffect(lifecycleOwner) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_DESTROY) {
-                onDestroy()
+            when (event) {
+                Lifecycle.Event.ON_START -> onStart()
+                Lifecycle.Event.ON_STOP -> onStop()
+                Lifecycle.Event.ON_DESTROY -> onDestroy()
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
