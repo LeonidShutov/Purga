@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.leonidshutov.forestaura.ui.theme.ForestAuraTheme
 import kotlinx.coroutines.delay
 import timber.log.Timber
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +79,7 @@ fun MainScreen(viewModel: MainViewModel) {
         selectedTimerDuration?.let { duration ->
             isTimerActive = true
             remainingTime = duration * 60 // Convert minutes to seconds
-            while (isTimerActive && remainingTime != null && remainingTime!! > 0) {
+            while (isTimerActive && remainingTime!! > 0) {
                 delay(1000L) // Wait for 1 second
                 remainingTime = remainingTime!! - 1
             }
@@ -92,6 +93,10 @@ fun MainScreen(viewModel: MainViewModel) {
             isTimerActive = false
         }
     }
+
+    ObserveLifecycle(LocalLifecycleOwner.current, onDestroy = {
+        viewModel.stopAllPlayers(context)
+    })
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -136,7 +141,6 @@ fun MainScreen(viewModel: MainViewModel) {
                 selectedTimerDuration = duration
                 showTimerDialog = false
             },
-            onCancel = { isTimerActive = false },
             onDismiss = { showTimerDialog = false }
         )
     }
@@ -145,7 +149,6 @@ fun MainScreen(viewModel: MainViewModel) {
 @Composable
 fun SleepTimerDialog(
     onTimerSelected: (Int) -> Unit,
-    onCancel: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var customDuration by remember { mutableStateOf("") }
@@ -258,7 +261,7 @@ fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>, viewModel:
 
 @Composable
 fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Context) {
-    val sliderValue = remember { mutableStateOf(buttonData.volume) }
+    val sliderValue = remember { mutableFloatStateOf(buttonData.volume) }
 
     // Animate the card's background color
     val backgroundColor by animateColorAsState(
@@ -267,7 +270,7 @@ fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Conte
         } else {
             MaterialTheme.colorScheme.surface // Default color
         },
-        animationSpec = tween(durationMillis = 300) // Smooth transition
+        animationSpec = tween(durationMillis = 300), label = "" // Smooth transition
     )
 
     Card(
@@ -320,9 +323,9 @@ fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Conte
                 exit = shrinkVertically()
             ) {
                 Slider(
-                    value = sliderValue.value,
+                    value = sliderValue.floatValue,
                     onValueChange = { newValue ->
-                        sliderValue.value = newValue
+                        sliderValue.floatValue = newValue
                         buttonData.volume = newValue
                         buttonData.mediaPlayer.setVolume(newValue, newValue)
                     },
@@ -348,7 +351,7 @@ fun TopAppBarContent(
             if (remainingTime != null) {
                 val minutes = remainingTime / 60
                 val seconds = remainingTime % 60
-                val formattedTime = String.format("%02d:%02d", minutes, seconds) // Format with leading zeros
+                val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds) // Format with leading zeros
                 Text(
                     text = "Remaining: $formattedTime",
                     modifier = Modifier.padding(end = 16.dp)
