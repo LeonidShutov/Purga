@@ -17,6 +17,7 @@ class MainViewModel : ViewModel() {
             soundResources.forEach { (rawResourceId, fileName) ->
                 val mediaPlayer = MediaPlayer.create(context, rawResourceId)
                     ?: throw IllegalStateException("Failed to create MediaPlayer for resource $rawResourceId")
+                mediaPlayer.isLooping = true // Set the MediaPlayer to loop indefinitely
                 mediaPlayer.setOnCompletionListener {
                     _mediaPlayersMap[rawResourceId]?.let { buttonData ->
                         if (buttonData.mediaPlayer.isPlaying) { // Check if the player is still playing
@@ -49,6 +50,7 @@ class MainViewModel : ViewModel() {
                 rawFileDescriptor.length
             )
             mediaPlayer.prepare()
+            mediaPlayer.isLooping = true // Ensure the MediaPlayer is set to loop
             if (buttonData.lastPosition > 0) {
                 mediaPlayer.seekTo(buttonData.lastPosition)
             }
