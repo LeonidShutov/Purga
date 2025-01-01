@@ -16,7 +16,6 @@ class MainViewModel : ViewModel() {
     fun initialize(context: Context, soundResources: List<Pair<Int, String>>) {
         soundPreferences = SoundPreferences(context)
         initializeMediaPlayers(context, soundResources)
-        restorePlayingSounds(context)
     }
 
     private fun initializeMediaPlayers(context: Context, soundResources: List<Pair<Int, String>>) {
@@ -51,25 +50,27 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun stopAllPlayers(context: Context) {
-        // Save the currently playing sounds before stopping them
+    fun stopAllPlayers() {
+        Timber.d("stopAllPlayers called")
         savePlayingSounds()
 
         _mediaPlayersMap.values.forEach { buttonData ->
+            Timber.d("MediaPlayer state for ${buttonData.fileName}: isPlaying=${buttonData.mediaPlayer.isPlaying}")
             if (buttonData.mediaPlayer.isPlaying) {
+                Timber.d("Pausing MediaPlayer for: ${buttonData.fileName}")
                 buttonData.mediaPlayer.pause()
-                buttonData.isPlaying.value = false // Update playing state
-                Timber.d("MediaPlayer paused for: ${buttonData.fileName}")
+                buttonData.isPlaying.value = false
             }
+            Timber.d("Resetting MediaPlayer for: ${buttonData.fileName}")
             buttonData.mediaPlayer.seekTo(0)
             buttonData.lastPosition = 0
         }
-        stopForegroundService(context)
     }
 
     fun resumePlayers(context: Context) {
-        Timber.d("Resuming playing sounds: $lastSavedPlayingSounds")
-        lastSavedPlayingSounds.forEach { soundId ->
+        Timber.d("resumePlayers called")
+        val playingSounds = soundPreferences?.getPlayingSounds() ?: return
+        playingSounds.forEach { soundId ->
             _mediaPlayersMap[soundId]?.let { buttonData ->
                 prepareAndStartMediaPlayer(buttonData, context)
             }
@@ -91,7 +92,6 @@ class MainViewModel : ViewModel() {
     }
 
     fun prepareAndStartMediaPlayer(buttonData: ButtonData, context: Context) {
-        Timber.d("Preparing and starting MediaPlayer for: ${buttonData.fileName}")
         val mediaPlayer = buttonData.mediaPlayer
         val rawResourceId = buttonData.rawResourceId
 
@@ -109,17 +109,7 @@ class MainViewModel : ViewModel() {
                     mediaPlayer.seekTo(buttonData.lastPosition)
                 }
                 mediaPlayer.start()
-                buttonData.isPlaying.value = true
-
-                // Start the foreground service if it's not already running
-                val activePlayers = _mediaPlayersMap.values.filter { it.isPlaying.value }
-                if (activePlayers.size == 1) {
-                    try {
-                        startForegroundService(context, activePlayers.map { it.rawResourceId })
-                    } catch (e: Exception) {
-                        Timber.e("Failed to start foreground service: ${e.message}")
-                    }
-                }
+                buttonData.isPlaying.value = true // Update playing state
             }
         } catch (e: Exception) {
             Timber.e("Error preparing or starting MediaPlayer: ${e.message}")

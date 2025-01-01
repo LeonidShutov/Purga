@@ -5,9 +5,12 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -46,13 +49,49 @@ import timber.log.Timber
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Timber.d("Notification permission granted")
+            // Permission granted, start the foreground service if needed
+            val intent = Intent(this, ForegroundService::class.java).apply {
+                putIntegerArrayListExtra("soundResourceIds", ArrayList(emptyList())) // Pass empty list for now
+            }
+
+            startForegroundService(intent)
+
+        } else {
+            Timber.d("Notification permission denied")
+            // Permission denied, show a message to the user
+            Toast.makeText(
+                this,
+                "Notification permission is required to show playback controls.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.plant(Timber.DebugTree()) // Plant a debug tree for debug builds
+
+        // Request notification permission for Android 13 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         setContent {
             ForestAuraTheme {
-                val viewModel: MainViewModel = viewModel()
-                MainScreen(viewModel)
+                MainScreen(
+                    onNotificationPermissionGranted = {
+                        // Start the foreground service if needed
+                        val intent = Intent(this, ForegroundService::class.java).apply {
+                            putIntegerArrayListExtra("soundResourceIds", ArrayList(emptyList())) // Pass empty list for now
+                        }
+                        startForegroundService(intent)
+                    }
+                )
             }
         }
     }
@@ -61,7 +100,8 @@ class MainActivity : ComponentActivity() {
 val timerDurations = listOf(10, 30, 60, 180) // In minutes
 
 @Composable
-fun MainScreen(viewModel: MainViewModel) {
+fun MainScreen(viewModel: MainViewModel = viewModel(),
+               onNotificationPermissionGranted: () -> Unit = {}) {
     val context = LocalContext.current
     val soundResources = loadSoundResources(context)
     var showTimerDialog by remember { mutableStateOf(false) }
@@ -84,7 +124,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 remainingTime = remainingTime!! - 1
             }
             if (isTimerActive) {
-                viewModel.stopAllPlayers(context)
+                viewModel.stopAllPlayers()
                 showTimerEndNotification(context)
             }
             selectedTimerDuration = null
@@ -100,7 +140,8 @@ fun MainScreen(viewModel: MainViewModel) {
     }, onDestroy = {
         Timber.d("App is being destroyed. Saving last saved playing sounds.")
         viewModel.savePlayingSounds(saveLastSaved = true)
-        viewModel.stopAllPlayers(context)
+        viewModel.stopAllPlayers()
+        stopForegroundService(context)
     })
 
     Box(
@@ -130,7 +171,7 @@ fun MainScreen(viewModel: MainViewModel) {
             Button(
                 onClick = {
                     if (isAnySoundPlaying) {
-                        viewModel.stopAllPlayers(context)
+                        viewModel.stopAllPlayers()
                     } else {
                         viewModel.resumePlayers(context)
                     }
