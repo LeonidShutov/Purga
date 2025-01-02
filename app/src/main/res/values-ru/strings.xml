@@ -14,12 +14,21 @@
     <string name="remaining_time">Осталось: %1$s</string>
     <string name="notification_permission_required">Notification permission is required to show playback controls.</string>
     <string name="settings">Настройки</string>
+    <string name="close">Закрыть</string>"
     <string name="cancel_timer">Отменить таймер</string>
     <string name="sleep_timer">Таймер сна</string>
+
+    <!-- Language settings -->
     <string name="language">Язык</string>
     <string name="system_language">Системный язык</string>
     <string name="english">English</string>
     <string name="russian">Русский</string>
+
+    <!-- Theme settings -->
+    <string name="theme">Тема</string>
+    <string name="system_theme">Системная Тема</string>
+    <string name="light_theme">Светлая Тема</string>
+    <string name="dark_theme">Темная Тема</string>
 
     <!-- Group Names -->
     <string name="group_birds">Птицы</string>

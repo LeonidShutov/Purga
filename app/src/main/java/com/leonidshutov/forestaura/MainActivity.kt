@@ -75,6 +75,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val themeManager by lazy { ThemeManager(this) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.plant(Timber.DebugTree()) // Plant a debug tree for debug builds
@@ -85,8 +87,15 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ForestAuraTheme {
+            ForestAuraTheme(
+                darkTheme = themeManager.getSelectedTheme() == "dark",
+                dynamicColor = false // Disable dynamic color for now
+            ) {
                 MainScreen(
+                    onThemeSelected = { theme ->
+                        themeManager.setSelectedTheme(theme)
+                        recreate() // Restart the activity to apply the new theme
+                    },
                     onNotificationPermissionGranted = {
                         // Start the foreground service if needed
                         val intent = Intent(this, ForegroundService::class.java).apply {
@@ -104,11 +113,14 @@ val timerDurations = listOf(10, 30, 60, 180) // In minutes
 
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel(),
+               onThemeSelected: (String) -> Unit,
                onNotificationPermissionGranted: () -> Unit = {}) {
     val context = LocalContext.current
     val soundResources = loadSoundResources(context)
     var showTimerDialog by remember { mutableStateOf(false) }
-    var showLanguageDialog by remember { mutableStateOf(false) } // State for language dialog
+    var showSettingsScreen by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) } // State for theme dialog
     var selectedTimerDuration by remember { mutableStateOf<Int?>(null) }
     var remainingTime by remember { mutableStateOf<Int?>(null) }
     var isTimerActive by remember { mutableStateOf(false) }
@@ -166,7 +178,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
         ) {
             TopAppBarContent(
                 onTimerClick = { showTimerDialog = true },
-                onSettingsClick = { showLanguageDialog = true }, // Open language dialog
+                onSettingsClick = { showSettingsScreen = true },
                 remainingTime = remainingTime,
                 onCancelTimer = { isTimerActive = false }
             )
@@ -190,6 +202,28 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
 
             SoundGroups(viewModel.mediaPlayersMap, viewModel)
         }
+
+        // Show the settings screen with a background
+        if (showSettingsScreen) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                color = Color.Transparent
+            ) {
+                SettingsScreen(
+                    onLanguageClick = {
+                        showSettingsScreen = false
+                        showLanguageDialog = true
+                    },
+                    onThemeClick = {
+                        showSettingsScreen = false
+                        showThemeDialog = true
+                    },
+                    onDismiss = { showSettingsScreen = false }
+                )
+            }
+        }
     }
 
     // Show the sleep timer dialog
@@ -208,10 +242,106 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
         LanguageSelectionDialog(
             onLanguageSelected = { languageCode ->
                 setAppLanguage(context, languageCode)
+                showLanguageDialog = false
             },
             onDismiss = { showLanguageDialog = false }
         )
     }
+
+    // Show the theme selection dialog
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            onThemeSelected = { theme ->
+                onThemeSelected(theme)
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+}
+
+@Composable
+fun SettingsScreen(
+    onLanguageClick: () -> Unit,
+    onThemeClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        // Language Option
+        Button(
+            onClick = onLanguageClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(text = context.getString(R.string.language))
+        }
+
+        // Theme Option
+        Button(
+            onClick = onThemeClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(text = context.getString(R.string.theme))
+        }
+
+        // Close Button
+        Button(
+            onClick = onDismiss,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(text = context.getString(R.string.close))
+        }
+    }
+}
+
+@Composable
+fun ThemeSelectionDialog(
+    onThemeSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val themes = listOf(
+        "system" to stringResource(R.string.system_theme),
+        "light" to stringResource(R.string.light_theme),
+        "dark" to stringResource(R.string.dark_theme)
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.theme)) },
+        text = {
+            Column {
+                themes.forEach { (themeCode, themeName) ->
+                    Button(
+                        onClick = {
+                            onThemeSelected(themeCode)
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Text(themeName)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -606,5 +736,5 @@ data class ButtonData(
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    MainScreen(viewModel = MainViewModel())
+    MainScreen(viewModel = MainViewModel(), onThemeSelected = {}, onNotificationPermissionGranted = {})
 }
