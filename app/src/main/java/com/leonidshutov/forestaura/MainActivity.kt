@@ -537,15 +537,21 @@ private fun showTimerEndNotification(context: Context) {
     val channel = NotificationChannel(
         "timer_channel",
         "Timer Notifications",
-        NotificationManager.IMPORTANCE_DEFAULT
-    )
+        NotificationManager.IMPORTANCE_LOW // Low importance ensures no sound or vibration
+    ).apply {
+        enableVibration(false) // Disable vibration
+        setSound(null, null)   // Disable sound
+    }
     notificationManager.createNotificationChannel(channel)
 
+    // Build the silent notification
     val notification = NotificationCompat.Builder(context, "timer_channel")
-        .setContentTitle("Forest Aura")
-        .setContentText("Sleep timer has ended")
+        .setContentTitle(context.getString(R.string.app_name))
+        .setContentText(context.getString(R.string.sleep_timer_ended))
         .setSmallIcon(R.drawable.ic_launcher_foreground)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setPriority(NotificationCompat.PRIORITY_LOW) // Low priority ensures no sound or vibration
+        .setSound(null) // Disable sound
+        .setVibrate(null) // Disable vibration
         .build()
 
     notificationManager.notify(1, notification)
