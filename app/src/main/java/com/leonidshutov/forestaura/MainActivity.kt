@@ -150,15 +150,20 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
     }
 
     // Save last saved playing sounds when the app is backgrounded or destroyed
-    ObserveLifecycle(LocalLifecycleOwner.current, onStop = {
-        Timber.d("App is being backgrounded. Saving last saved playing sounds.")
-        viewModel.savePlayingSounds(saveLastSaved = true)
-    }, onDestroy = {
-        Timber.d("App is being destroyed. Saving last saved playing sounds.")
-        viewModel.savePlayingSounds(saveLastSaved = true)
-        viewModel.stopAllPlayers()
-        stopForegroundService(context)
-    })
+    ObserveLifecycle(
+        lifecycleOwner = LocalLifecycleOwner.current,
+        viewModel = viewModel,
+        onStop = {
+            Timber.d("App is being backgrounded. Saving last saved playing sounds.")
+            viewModel.savePlayingSounds(saveLastSaved = true)
+        },
+        onDestroy = {
+            Timber.d("App is being destroyed. Saving last saved playing sounds.")
+            viewModel.savePlayingSounds(saveLastSaved = true)
+            viewModel.stopAllPlayers()
+            stopForegroundService(context)
+        }
+    )
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -220,7 +225,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
                         showSettingsScreen = false
                         showThemeDialog = true
                     },
-                    onDismiss = { showSettingsScreen = false }
+                    onDismiss = { showSettingsScreen = false },
+                    viewModel = viewModel
                 )
             }
         }
@@ -264,9 +270,11 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
 fun SettingsScreen(
     onLanguageClick: () -> Unit,
     onThemeClick: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    viewModel: MainViewModel
 ) {
     val context = LocalContext.current
+    val playInBackground by viewModel.playInBackground
 
     Column(
         modifier = Modifier
@@ -282,7 +290,8 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
         ) {
-            Text(text = context.getString(R.string.language))
+            Text(text = context.getString(R.string.language),
+                color = MaterialTheme.colorScheme.onSurface)
         }
 
         // Theme Option
@@ -292,7 +301,26 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
         ) {
-            Text(text = context.getString(R.string.theme))
+            Text(text = context.getString(R.string.theme),
+                color = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Play sounds in background switch
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = context.getString(R.string.play_in_background),
+                color = MaterialTheme.colorScheme.onSurface)
+            Switch(
+                checked = playInBackground,
+                onCheckedChange = { enabled ->
+                    viewModel.setPlayInBackground(enabled)
+                }
+            )
         }
 
         // Close Button
@@ -302,7 +330,8 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
         ) {
-            Text(text = context.getString(R.string.close))
+            Text(text = context.getString(R.string.close),
+                color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -702,6 +731,7 @@ fun stopForegroundService(context: Context) {
 @Composable
 fun ObserveLifecycle(
     lifecycleOwner: LifecycleOwner,
+    viewModel: MainViewModel,
     onStart: () -> Unit = {},
     onStop: () -> Unit = {},
     onDestroy: () -> Unit = {}
@@ -710,7 +740,12 @@ fun ObserveLifecycle(
         val lifecycleObserver = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_START -> onStart()
-                Lifecycle.Event.ON_STOP -> onStop()
+                Lifecycle.Event.ON_STOP -> {
+                    if (!viewModel.playInBackground.value) {
+                        viewModel.stopAllPlayers() // Stop sounds if background play is disabled
+                    }
+                    onStop()
+                }
                 Lifecycle.Event.ON_DESTROY -> onDestroy()
                 else -> {}
             }

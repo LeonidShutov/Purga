@@ -16,4 +16,13 @@ class SoundPreferences(context: Context) {
         Timber.d("Retrieved playing sounds: $playingSounds")
         return playingSounds
     }
+
+    // Add new preference for playing sounds in the background
+    fun setPlayInBackground(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("play_in_background", enabled).apply()
+    }
+
+    fun getPlayInBackground(): Boolean {
+        return sharedPreferences.getBoolean("play_in_background", true) // Default to true
+    }
 }

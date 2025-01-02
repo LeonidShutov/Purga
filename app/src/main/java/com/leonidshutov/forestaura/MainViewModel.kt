@@ -2,7 +2,9 @@ package com.leonidshutov.forestaura
 
 import android.content.Context
 import android.media.MediaPlayer
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import timber.log.Timber
 
@@ -13,10 +15,19 @@ class MainViewModel : ViewModel() {
     private var soundPreferences: SoundPreferences? = null
     private var lastSavedPlayingSounds: Set<Int> = emptySet() // Track last saved playing sounds
 
+    private val _playInBackground = mutableStateOf(true)
+    val playInBackground: State<Boolean> get() = _playInBackground
+
     fun initialize(context: Context, soundResources: List<Triple<Int, String, String>>) {
         Timber.d("Initializing MediaPlayers")
         soundPreferences = SoundPreferences(context)
+        _playInBackground.value = soundPreferences?.getPlayInBackground() ?: true // Load preference
         initializeMediaPlayers(context, soundResources)
+    }
+
+    fun setPlayInBackground(enabled: Boolean) {
+        _playInBackground.value = enabled
+        soundPreferences?.setPlayInBackground(enabled)
     }
 
     private fun initializeMediaPlayers(context: Context, soundResources: List<Triple<Int, String, String>>) {

@@ -17,6 +17,7 @@
     <string name="close">Закрыть</string>"
     <string name="cancel_timer">Отменить таймер</string>
     <string name="sleep_timer">Таймер сна</string>
+    <string name="play_in_background">Продолжать звуки в фоне</string>
 
     <!-- Language settings -->
     <string name="language">Язык</string>

@@ -17,6 +17,7 @@
     <string name="close">Close</string>"
     <string name="cancel_timer">Cancel Timer</string>
     <string name="sleep_timer">Sleep Timer</string>
+    <string name="play_in_background">Play sounds in background</string>
 
     <!-- Language settings -->
     <string name="language">Language</string>
