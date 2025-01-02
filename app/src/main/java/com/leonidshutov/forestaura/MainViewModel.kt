@@ -13,13 +13,14 @@ class MainViewModel : ViewModel() {
     private var soundPreferences: SoundPreferences? = null
     private var lastSavedPlayingSounds: Set<Int> = emptySet() // Track last saved playing sounds
 
-    fun initialize(context: Context, soundResources: List<Pair<Int, String>>) {
+    fun initialize(context: Context, soundResources: List<Triple<Int, String, String>>) {
+        Timber.d("Initializing MediaPlayers")
         soundPreferences = SoundPreferences(context)
         initializeMediaPlayers(context, soundResources)
     }
 
-    private fun initializeMediaPlayers(context: Context, soundResources: List<Pair<Int, String>>) {
-        soundResources.forEach { (rawResourceId, fileName) ->
+    private fun initializeMediaPlayers(context: Context, soundResources: List<Triple<Int, String, String>>) {
+        soundResources.forEach { (rawResourceId, fileName, label) ->
             val mediaPlayer = MediaPlayer.create(context, rawResourceId)
                 ?: throw IllegalStateException("Failed to create MediaPlayer for resource $rawResourceId")
             mediaPlayer.isLooping = true
@@ -35,8 +36,10 @@ class MainViewModel : ViewModel() {
                 mediaPlayer = mediaPlayer,
                 context = context,
                 rawResourceId = rawResourceId,
-                fileName = fileName
+                fileName = fileName, // Original file name
+                label = label       // Localized label
             )
+            Timber.d("Initialized MediaPlayer for: resourceId=$rawResourceId, fileName=$fileName, label=$label")
         }
     }
 

@@ -1,7 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="stop_all">stop all</string>
     <string name="app_name">ForestAura</string>
     <string name="pause">pause</string>
-    <string name="play">play</string>
+    <string name="play">Play</string>
+    <string name="stop_all">stop all</string>
+    <string name="set_sleep_timer">Set Sleep Timer</string>
+    <string name="custom_duration">Custom duration (minutes)</string>
+    <string name="set_custom_timer">Set Custom Timer</string>
+    <string name="cancel">Cancel</string>
+    <string name="minutes">minutes</string>
+    <string name="sleep_timer_ended">Sleep timer has ended</string>
+    <string name="playing_nature_sounds">Playing nature sounds</string>
+    <string name="remaining_time">Remaining: %1$s</string>
+    <string name="notification_permission_required">Notification permission is required to show playback controls.</string>
+    <!-- Sound Labels -->
+    <string name="sound_animals_humpbackwhale">Humpback Whale</string>
+    <string name="sound_animals_humpbackwhale2">Humpback Whale 2</string>
+    <string name="sound_birds">Birds</string>
+    <string name="sound_birds2">Birds 2</string>
+    <string name="sound_birds3">Birds 3</string>
+    <string name="sound_birds_parrots">Parrots</string>
+    <string name="sound_birds_seagulls">Seagulls</string>
+    <string name="sound_birds_snowgoose">Snow goose</string>
+    <string name="sound_forest_bonfire">Bonfire</string>
+    <string name="sound_forest_night">Night Forest</string>
+    <string name="sound_forest_rainforest">Rainforest</string>
+    <string name="sound_water_marsh">Marsh</string>
+    <string name="sound_water_mountainstream">Mountain Stream</string>
+    <string name="sound_water_riverside">Riverside</string>
+    <string name="sound_water_seacliffs">Sea cliffs</string>
+    <string name="sound_weather_blizzard">Blizzard</string>
+    <string name="sound_weather_blizzard2">Blizzard 2</string>
+    <string name="sound_weather_hail">Hail</string>
+    <string name="sound_weather_lakesounds">Lake Sounds</string>
+    <string name="sound_weather_thunder">Thunder</string>
+    <string name="sound_weather_winter">Winter</string>
 </resources>

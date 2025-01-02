@@ -89,14 +89,14 @@ class ForegroundService : Service() {
         val actionPendingIntent = PendingIntent.getBroadcast(this, 1, actionIntent, PendingIntent.FLAG_IMMUTABLE)
         val action = NotificationCompat.Action(
             if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
-            if (isPlaying) "Pause" else "Resume",
+            if (isPlaying) getString(R.string.pause) else getString(R.string.play),
             actionPendingIntent
         )
 
         Timber.d("Creating notification for foreground service")
         return NotificationCompat.Builder(this, "forest_aura_channel")
-            .setContentTitle("Forest Aura")
-            .setContentText("Playing nature sounds")
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.playing_nature_sounds))
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .addAction(action)

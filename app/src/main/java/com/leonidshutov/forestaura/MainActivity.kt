@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
             // Permission denied, show a message to the user
             Toast.makeText(
                 this,
-                "Notification permission is required to show playback controls.",
+                getString(R.string.notification_permission_required),
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -111,6 +111,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
 
     // Initialize media players
     LaunchedEffect(Unit) {
+        Timber.d("Initializing MediaPlayers in MainScreen")
         viewModel.initialize(context, soundResources)
     }
 
@@ -180,7 +181,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(text = if (isAnySoundPlaying) "Stop All" else "Resume", fontSize = 14.sp)
+                Text(text = if (isAnySoundPlaying) context.getString(R.string.stop_all) else context.getString(R.string.play), fontSize = 14.sp)
             }
 
             SoundGroups(viewModel.mediaPlayersMap, viewModel)
@@ -204,11 +205,12 @@ fun SleepTimerDialog(
     onTimerSelected: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var customDuration by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Sleep Timer") },
+        title = { Text(context.getString(R.string.set_sleep_timer)) },
         text = {
             Column {
                 timerDurations.forEach { duration ->
@@ -216,14 +218,14 @@ fun SleepTimerDialog(
                         onClick = { onTimerSelected(duration) },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                     ) {
-                        Text("$duration minutes")
+                        Text("$duration ${context.getString(R.string.minutes)}")
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
                     value = customDuration,
                     onValueChange = { customDuration = it },
-                    label = { Text("Custom duration (minutes)") },
+                    label = { Text(context.getString(R.string.custom_duration)) },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -236,13 +238,13 @@ fun SleepTimerDialog(
                     },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
-                    Text("Set Custom Timer")
+                    Text(context.getString(R.string.set_custom_timer))
                 }
             }
         },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("Cancel")
+                Text(context.getString(R.string.cancel))
             }
         }
     )
@@ -250,6 +252,8 @@ fun SleepTimerDialog(
 
 @Composable
 fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>, viewModel: MainViewModel) {
+    Timber.d("SoundGroups: mediaPlayersMap size=${mediaPlayersMap.size}")
+
     val groups = listOf(
         "Birds" to mediaPlayersMap.values.filter { it.fileName.startsWith("bird") },
         "Water" to mediaPlayersMap.values.filter { it.fileName.startsWith("water") },
@@ -257,6 +261,11 @@ fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>, viewModel: MainViewModel)
         "Weather" to mediaPlayersMap.values.filter { it.fileName.startsWith("weather") },
         "Animals" to mediaPlayersMap.values.filter { it.fileName.startsWith("animal") }
     )
+
+    Timber.d("SoundGroups: mediaPlayersMap size=${mediaPlayersMap.size}")
+    groups.forEach { (groupName, sounds) ->
+        Timber.d("SoundGroups: group=$groupName, sounds size=${sounds.size}")
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -274,6 +283,8 @@ fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>, viewModel: MainViewModel)
 @Composable
 fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>, viewModel: MainViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
+
+    Timber.d("ExpandableSoundGroup: group=$groupName, sounds size=${sounds.size}")
 
     Card(
         modifier = Modifier
@@ -315,6 +326,8 @@ fun ExpandableSoundGroup(groupName: String, sounds: List<ButtonData>, viewModel:
 @Composable
 fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Context) {
     val sliderValue = remember { mutableFloatStateOf(buttonData.volume) }
+
+    Timber.d("SoundButton: label=${buttonData.label}, isPlaying=${buttonData.isPlaying.value}")
 
     // Animate the card's background color
     val backgroundColor by animateColorAsState(
@@ -364,7 +377,7 @@ fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Conte
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = buttonData.fileName,
+                        text = buttonData.label, // Use the localized label
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -426,15 +439,18 @@ fun TopAppBarContent(
     )
 }
 
-private fun loadSoundResources(context: Context): List<Pair<Int, String>> {
-    val soundResources = mutableListOf<Pair<Int, String>>()
+private fun loadSoundResources(context: Context): List<Triple<Int, String, String>> {
+    val soundResources = mutableListOf<Triple<Int, String, String>>()
     val rawClass = R.raw::class.java
     val rawFields = rawClass.fields
 
     for (field in rawFields) {
         val resourceId = field.getInt(null)
         val fileName = context.resources.getResourceEntryName(resourceId)
-        soundResources.add(resourceId to fileName)
+        val labelResId = context.resources.getIdentifier("sound_${fileName}", "string", context.packageName)
+        val label = if (labelResId != 0) context.getString(labelResId) else fileName
+        Timber.d("Loaded sound: resourceId=$resourceId, fileName=$fileName, label=$label")
+        soundResources.add(Triple(resourceId, fileName, label))
     }
 
     return soundResources
@@ -499,7 +515,8 @@ data class ButtonData(
     var lastPosition: Int = 0,
     val context: Context,
     val rawResourceId: Int,
-    val fileName: String,
+    val fileName: String, // Original file name
+    val label: String,    // Localized label
     var volume: Float = 1.0f,
     var isPlaying: MutableState<Boolean> = mutableStateOf(false) // Track playing state
 )
