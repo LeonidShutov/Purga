@@ -4,7 +4,7 @@
     <string name="pause">Пауза</string>
     <string name="play">Запуск</string>
     <string name="stop_all">Остановить все</string>
-    <string name="set_sleep_timer">Устпновить таймер сна</string>
+    <string name="set_sleep_timer">Установить таймер сна</string>
     <string name="custom_duration">Свой таймер (в минутах)</string>
     <string name="set_custom_timer">Установить свой таймер</string>
     <string name="cancel">Отмена</string>
@@ -13,6 +13,13 @@
     <string name="playing_nature_sounds">Звуки природы</string>
     <string name="remaining_time">Осталось: %1$s</string>
     <string name="notification_permission_required">Notification permission is required to show playback controls.</string>
+    <string name="settings">Настройки</string>
+    <string name="cancel_timer">Отменить таймер</string>
+    <string name="sleep_timer">Таймер сна</string>
+    <string name="language">Язык</string>
+    <string name="system_language">Системный язык</string>
+    <string name="english">English</string>
+    <string name="russian">Русский</string>
 
     <!-- Group Names -->
     <string name="group_birds">Птицы</string>

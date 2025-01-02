@@ -1,5 +1,6 @@
 package com.leonidshutov.forestaura
 
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -25,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -105,13 +108,13 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
     val context = LocalContext.current
     val soundResources = loadSoundResources(context)
     var showTimerDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) } // State for language dialog
     var selectedTimerDuration by remember { mutableStateOf<Int?>(null) }
     var remainingTime by remember { mutableStateOf<Int?>(null) }
     var isTimerActive by remember { mutableStateOf(false) }
 
     // Initialize media players
     LaunchedEffect(Unit) {
-        Timber.d("Initializing MediaPlayers in MainScreen")
         viewModel.initialize(context, soundResources)
     }
 
@@ -163,6 +166,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
         ) {
             TopAppBarContent(
                 onTimerClick = { showTimerDialog = true },
+                onSettingsClick = { showLanguageDialog = true }, // Open language dialog
                 remainingTime = remainingTime,
                 onCancelTimer = { isTimerActive = false }
             )
@@ -181,7 +185,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(text = if (isAnySoundPlaying) context.getString(R.string.stop_all) else context.getString(R.string.play), fontSize = 14.sp)
+                Text(text = if (isAnySoundPlaying) stringResource(R.string.stop_all) else stringResource(R.string.play), fontSize = 14.sp)
             }
 
             SoundGroups(viewModel.mediaPlayersMap, viewModel)
@@ -198,6 +202,53 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
             onDismiss = { showTimerDialog = false }
         )
     }
+
+    // Show the language selection dialog
+    if (showLanguageDialog) {
+        LanguageSelectionDialog(
+            onLanguageSelected = { languageCode ->
+                setAppLanguage(context, languageCode)
+            },
+            onDismiss = { showLanguageDialog = false }
+        )
+    }
+}
+
+@Composable
+fun LanguageSelectionDialog(
+    onLanguageSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val languages = listOf(
+        "system" to stringResource(R.string.system_language),
+        "en" to stringResource(R.string.english),
+        "ru" to stringResource(R.string.russian)
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.language)) },
+        text = {
+            Column {
+                languages.forEach { (code, name) ->
+                    Button(
+                        onClick = {
+                            onLanguageSelected(code)
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Text(name)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -408,6 +459,7 @@ fun SoundButton(buttonData: ButtonData, viewModel: MainViewModel, context: Conte
 @Composable
 fun TopAppBarContent(
     onTimerClick: () -> Unit,
+    onSettingsClick: () -> Unit, // New parameter for settings click
     remainingTime: Int?,
     onCancelTimer: () -> Unit
 ) {
@@ -417,22 +469,28 @@ fun TopAppBarContent(
             if (remainingTime != null) {
                 val minutes = remainingTime / 60
                 val seconds = remainingTime % 60
-                val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds) // Format with leading zeros
+                val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
                 Text(
-                    text = "Remaining: $formattedTime",
+                    text = stringResource(R.string.remaining_time, formattedTime),
                     modifier = Modifier.padding(end = 16.dp)
                 )
                 IconButton(onClick = onCancelTimer) {
                     Icon(
-                        imageVector = Icons.Default.Close, // or Icons.Default.Close
-                        contentDescription = "Cancel Timer"
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.cancel_timer)
                     )
                 }
             }
             IconButton(onClick = onTimerClick) {
                 Icon(
-                    imageVector = Icons.Default.DateRange, // or Icons.Default.AccessTime
-                    contentDescription = "Sleep Timer"
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = stringResource(R.string.sleep_timer)
+                )
+            }
+            IconButton(onClick = onSettingsClick) { // Settings button
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.settings)
                 )
             }
         }
@@ -454,6 +512,24 @@ private fun loadSoundResources(context: Context): List<Triple<Int, String, Strin
     }
 
     return soundResources
+}
+
+fun setAppLanguage(context: Context, languageCode: String) {
+    val locale = when (languageCode) {
+        "system" -> Locale.getDefault() // Use system language
+        "en" -> Locale("en") // English
+        "ru" -> Locale("ru") // Spanish
+        // Add more languages as needed
+        else -> Locale.getDefault()
+    }
+
+    val resources = context.resources
+    val configuration = resources.configuration
+    configuration.setLocale(locale)
+    resources.updateConfiguration(configuration, resources.displayMetrics)
+
+    // Restart the activity to apply the language change
+    (context as Activity).recreate()
 }
 
 private fun showTimerEndNotification(context: Context) {
