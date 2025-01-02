@@ -13,6 +13,14 @@
     <string name="playing_nature_sounds">Звуки природы</string>
     <string name="remaining_time">Осталось: %1$s</string>
     <string name="notification_permission_required">Notification permission is required to show playback controls.</string>
+
+    <!-- Group Names -->
+    <string name="group_birds">Птицы</string>
+    <string name="group_water">Вода</string>
+    <string name="group_forest">Лес</string>
+    <string name="group_weather">Погода</string>
+    <string name="group_animals">Животные</string>
+
     <!-- Sound Labels -->
     <string name="sound_animals_humpbackwhale">Горбатый кит</string>
     <string name="sound_animals_humpbackwhale2">Горбатый кит 2</string>

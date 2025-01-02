@@ -252,14 +252,14 @@ fun SleepTimerDialog(
 
 @Composable
 fun SoundGroups(mediaPlayersMap: Map<Int, ButtonData>, viewModel: MainViewModel) {
-    Timber.d("SoundGroups: mediaPlayersMap size=${mediaPlayersMap.size}")
+    val context = LocalContext.current
 
     val groups = listOf(
-        "Birds" to mediaPlayersMap.values.filter { it.fileName.startsWith("bird") },
-        "Water" to mediaPlayersMap.values.filter { it.fileName.startsWith("water") },
-        "Forest" to mediaPlayersMap.values.filter { it.fileName.startsWith("forest") },
-        "Weather" to mediaPlayersMap.values.filter { it.fileName.startsWith("weather") },
-        "Animals" to mediaPlayersMap.values.filter { it.fileName.startsWith("animal") }
+        context.getString(R.string.group_birds) to mediaPlayersMap.values.filter { it.fileName.startsWith("bird") },
+        context.getString(R.string.group_water) to mediaPlayersMap.values.filter { it.fileName.startsWith("water") },
+        context.getString(R.string.group_forest) to mediaPlayersMap.values.filter { it.fileName.startsWith("forest") },
+        context.getString(R.string.group_weather) to mediaPlayersMap.values.filter { it.fileName.startsWith("weather") },
+        context.getString(R.string.group_animals) to mediaPlayersMap.values.filter { it.fileName.startsWith("animal") }
     )
 
     Timber.d("SoundGroups: mediaPlayersMap size=${mediaPlayersMap.size}")

@@ -3,7 +3,7 @@
     <string name="app_name">ForestAura</string>
     <string name="pause">pause</string>
     <string name="play">Play</string>
-    <string name="stop_all">stop all</string>
+    <string name="stop_all">Stop all</string>
     <string name="set_sleep_timer">Set Sleep Timer</string>
     <string name="custom_duration">Custom duration (minutes)</string>
     <string name="set_custom_timer">Set Custom Timer</string>
@@ -13,6 +13,14 @@
     <string name="playing_nature_sounds">Playing nature sounds</string>
     <string name="remaining_time">Remaining: %1$s</string>
     <string name="notification_permission_required">Notification permission is required to show playback controls.</string>
+
+    <!-- Group Names -->
+    <string name="group_birds">Birds</string>
+    <string name="group_water">Water</string>
+    <string name="group_forest">Forest</string>
+    <string name="group_weather">Weather</string>
+    <string name="group_animals">Animals</string>
+
     <!-- Sound Labels -->
     <string name="sound_animals_humpbackwhale">Humpback Whale</string>
     <string name="sound_animals_humpbackwhale2">Humpback Whale 2</string>
