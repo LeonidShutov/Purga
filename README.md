@@ -74,7 +74,7 @@ Forest Aura is inspired by the **Aura by Alexander Glazkov**, a classic Windows 
 
         Click on Run > Run 'app' to install and launch the app on your device.
 
-5. **Install via APK (Optional):
+5. **Install via APK (Optional)**:
 
         After building, the APK file will be located in app/build/outputs/apk/debug/.
 
@@ -82,7 +82,9 @@ Forest Aura is inspired by the **Aura by Alexander Glazkov**, a classic Windows 
 
 ### Contributing
 
-Forest Aura is an open-source project, and contributions are welcome! If you'd like to contribute, please follow these steps:
+Forest Aura is an open-source project, and contributions are welcome! 
+Remember that primary app focus is to create simple, distraction free, experience.
+If you'd like to contribute, please follow these steps:
 
     Fork the repository.
 
