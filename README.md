@@ -55,8 +55,8 @@ Purga is inspired by the **Aura by Alexander Glazkov**, a classic Windows applic
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-repo/forest-aura.git
-   cd forest-aura
+   git clone https://github.com/your-repo/Purga.git
+   cd Purga
 
 2. **Open the Project in Android Studio**:
 
