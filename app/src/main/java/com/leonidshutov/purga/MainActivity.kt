@@ -1,4 +1,4 @@
-package com.leonidshutov.forestaura
+package com.leonidshutov.purga
 
 import android.app.Activity
 import android.app.NotificationChannel
@@ -46,7 +46,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.leonidshutov.forestaura.ui.theme.ForestAuraTheme
+import com.leonidshutov.purga.ui.theme.PurgaTheme
 import kotlinx.coroutines.delay
 import timber.log.Timber
 import java.util.Locale
@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ForestAuraTheme(
+            PurgaTheme(
                 darkTheme = themeManager.getSelectedTheme() == "dark",
                 dynamicColor = false // Disable dynamic color for now
             ) {
@@ -623,7 +623,7 @@ fun TopAppBarContent(
     onCancelTimer: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("Forest Aura") },
+        title = { Text("Purga") },
         actions = {
             if (remainingTime != null) {
                 val minutes = remainingTime / 60

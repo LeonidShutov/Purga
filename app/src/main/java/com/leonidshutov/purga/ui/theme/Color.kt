@@ -1,4 +1,4 @@
-package com.leonidshutov.forestaura.ui.theme
+package com.leonidshutov.purga.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

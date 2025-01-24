@@ -1,6 +1,6 @@
-# ForestAura
+# Purga
 
-Forest Aura is a free Android app that allows you to play various nature sounds, such as birds chirping, water flowing, forest ambiance, and more. Forest Aura brings a simple, ad-free, and lightweight experience to Android users. Whether you want to relax, fall asleep, or create a calming environment for your baby, Forest Aura is here to help.
+Purga is a free Android app that allows you to play various nature sounds, such as birds chirping, water flowing, forest ambiance, and more. Purga brings a simple, ad-free, and lightweight experience to Android users. Whether you want to relax, fall asleep, or create a calming environment for your baby, Purga is here to help.
 
 ---
 
@@ -10,17 +10,17 @@ Forest Aura is a free Android app that allows you to play various nature sounds,
 - **Customizable Volume**: Adjust the volume of each sound individually.
 - **Sleep Timer**: Set a timer to automatically stop playback after a specified duration.
 - **Background Playback**: Continue playing sounds even when the app is in the background or the screen is turned off.
-- **No Ads or In-App Purchases**: Forest Aura is completely free, with no hidden costs or subscriptions.
-- **Lightweight and Simple**: Unlike many meditation apps, Forest Aura focuses on simplicity and configurability without unnecessary features.
+- **No Ads or In-App Purchases**: Purga is completely free, with no hidden costs or subscriptions.
+- **Lightweight and Simple**: Unlike many meditation apps, Purga focuses on simplicity and configurability without unnecessary features.
 - **Themes and Languages**: Choose between light, dark, or system themes, and switch between several supported languages.
 
 ---
 
-## Why Forest Aura?
+## Why Purga?
 
-- **Free and Ad-Free**: Unlike YouTube, which requires a premium subscription to play in the background or with the screen off, Forest Aura is completely free and works seamlessly in the background.
-- **No Subscriptions**: Many meditation apps require subscriptions for basic features. Forest Aura is free forever, with no hidden costs.
-- **Simple and Configurable**: Forest Aura avoids the bloat of many meditation apps, offering a clean and customizable experience.
+- **Free and Ad-Free**: Unlike YouTube, which requires a premium subscription to play in the background or with the screen off, Purga is completely free and works seamlessly in the background.
+- **No Subscriptions**: Many meditation apps require subscriptions for basic features. Purga is free forever, with no hidden costs.
+- **Simple and Configurable**: Purga avoids the bloat of many meditation apps, offering a clean and customizable experience.
 - **Useful for Various Scenarios**:
     - **Sleep**: Create a calming environment to help you fall asleep.
     - **Relaxation**: Use nature sounds to unwind after a long day.
@@ -30,7 +30,7 @@ Forest Aura is a free Android app that allows you to play various nature sounds,
 
 ## Inspired by Aura Windows App
 
-Forest Aura is inspired by the **Aura by Alexander Glazkov**, a classic Windows application that allowed users to play nature sounds on their PCs. This Android version brings the same simplicity and functionality to your mobile device, with modern features and improvements.
+Purga is inspired by the **Aura by Alexander Glazkov**, a classic Windows application that allowed users to play nature sounds on their PCs. This Android version brings the same simplicity and functionality to your mobile device, with modern features and improvements.
 
 ---
 
@@ -82,7 +82,7 @@ Forest Aura is inspired by the **Aura by Alexander Glazkov**, a classic Windows 
 
 ### Contributing
 
-Forest Aura is an open-source project, and contributions are welcome! 
+Purga is an open-source project, and contributions are welcome! 
 Remember that primary app focus is to create simple, distraction free, experience.
 If you'd like to contribute, please follow these steps:
 
@@ -96,7 +96,7 @@ If you'd like to contribute, please follow these steps:
 
 ### License
 
-Forest Aura is licensed under the GNU General Public License v3.0. See the LICENSE file for more details.
+Purga is licensed under the GNU General Public License v3.0. See the LICENSE file for more details.
 ### Acknowledgments
 
     Inspired by the Aura by Alexander Glazkov.
@@ -105,6 +105,6 @@ Forest Aura is licensed under the GNU General Public License v3.0. See the LICEN
 
 ### Download from Google Play
 
-You can download Forest Aura directly from the Google Play Store (link to be added).
+You can download Purga directly from the Google Play Store (link to be added).
 
-Enjoy the calming sounds of nature with Forest Aura! 🌿🎶
+Enjoy the calming sounds of nature with Purga! 🌿🎶

@@ -1,4 +1,4 @@
-package com.leonidshutov.forestaura
+package com.leonidshutov.purga
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -69,8 +69,8 @@ class ForegroundService : Service() {
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            "forest_aura_channel",
-            "Forest Aura",
+            "purga_channel",
+            "Purga",
             NotificationManager.IMPORTANCE_LOW
         )
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -94,7 +94,7 @@ class ForegroundService : Service() {
         )
 
         Timber.d("Creating notification for foreground service")
-        return NotificationCompat.Builder(this, "forest_aura_channel")
+        return NotificationCompat.Builder(this, "purga_channel")
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.playing_nature_sounds))
             .setSmallIcon(R.drawable.ic_launcher_foreground)

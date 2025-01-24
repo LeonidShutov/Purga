@@ -1,4 +1,4 @@
-package com.leonidshutov.forestaura
+package com.leonidshutov.purga
 
 import android.content.BroadcastReceiver
 import android.content.Context

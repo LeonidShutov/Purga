@@ -1,4 +1,4 @@
-package com.leonidshutov.forestaura.ui.theme
+package com.leonidshutov.purga.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -39,7 +39,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun ForestAuraTheme(
+fun PurgaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
