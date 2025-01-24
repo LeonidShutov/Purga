@@ -103,6 +103,9 @@ Purga is licensed under the GNU General Public License v3.0. See the LICENSE fil
 
     Built with ❤️ using Kotlin and Android Jetpack libraries.
 
+## Privacy Policy
+For information about how we handle your data, please read our [Privacy Policy](PRIVACY.md).
+
 ### Download from Google Play
 
 You can download Purga directly from the Google Play Store (link to be added).
