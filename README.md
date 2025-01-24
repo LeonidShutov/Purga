@@ -24,13 +24,13 @@ Purga is a free Android app that allows you to play various nature sounds, such 
 - **Useful for Various Scenarios**:
     - **Sleep**: Create a calming environment to help you fall asleep.
     - **Relaxation**: Use nature sounds to unwind after a long day.
-    - **Babies**: Play soothing sounds to help your baby sleep or stay calm.
+    - **(some) Kids love it**: Play soothing sounds to help your baby sleep or stay calm.
 
 ---
 
 ## Inspired by Aura Windows App
 
-Purga is inspired by the **Aura by Alexander Glazkov**, a classic Windows application that allowed users to play nature sounds on their PCs. This Android version brings the same simplicity and functionality to your mobile device, with modern features and improvements.
+Purga, which means Blizzard in Russian, is inspired by the **Aura by Alexander Glazkov**, a classic Windows application that allowed users to play nature sounds on their PCs. This Android version brings the same simplicity and functionality to your mobile device, with modern features and improvements.
 
 ---
 
