@@ -12,7 +12,7 @@ Forest Aura is a free Android app that allows you to play various nature sounds,
 - **Background Playback**: Continue playing sounds even when the app is in the background or the screen is turned off.
 - **No Ads or In-App Purchases**: Forest Aura is completely free, with no hidden costs or subscriptions.
 - **Lightweight and Simple**: Unlike many meditation apps, Forest Aura focuses on simplicity and configurability without unnecessary features.
-- **Themes and Languages**: Choose between light, dark, or system themes, and switch between English and Russian languages.
+- **Themes and Languages**: Choose between light, dark, or system themes, and switch between several supported languages.
 
 ---
 
