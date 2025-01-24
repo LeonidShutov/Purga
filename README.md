@@ -96,7 +96,7 @@ If you'd like to contribute, please follow these steps:
 
 ### License
 
-Forest Aura is licensed under the MIT License. See the LICENSE file for more details.
+Forest Aura is licensed under the GNU General Public License v3.0. See the LICENSE file for more details.
 ### Acknowledgments
 
     Inspired by the Aura by Alexander Glazkov.
