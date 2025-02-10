@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
 import android.media.MediaPlayer
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -38,7 +39,7 @@ class ForegroundService : Service() {
                 // Create a notification for the foreground service
                 createNotificationChannel()
                 val notification = createNotification(isPlaying = true)
-                startForeground(1, notification)
+                startForeground(1, notification, FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
                 Timber.d("Foreground service started with notification")
 
                 // Retrieve sound resource IDs from the intent
