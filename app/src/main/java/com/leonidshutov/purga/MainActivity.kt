@@ -623,7 +623,7 @@ fun TopAppBarContent(
     onCancelTimer: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("Purga") },
+        title = { Text(stringResource(R.string.app_name)) },
         actions = {
             if (remainingTime != null) {
                 val minutes = remainingTime / 60
